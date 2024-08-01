@@ -19,18 +19,18 @@ jobs:
           dotnet-version: '8.x'
 
       - name: Build with dotnet
-        working-directory: ./BackEnd
+        working-directory: BackEnd
         run: dotnet build --configuration Release
 
       - name: dotnet publish
-        working-directory: ./BackEnd
-        run: dotnet publish -c Release -o ./myapp
+        working-directory: BackEnd
+        run: dotnet publish -c Release -o myapp
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ./BackEnd/myapp
+          path: BackEnd/myapp
 
   deploy:
     runs-on: windows-latest
@@ -60,4 +60,4 @@ jobs:
         with:
           app-name: 'capi-lofi'
           slot-name: 'Production'
-          package: ./BackEnd/myapp
+          package: BackEnd/myapp
