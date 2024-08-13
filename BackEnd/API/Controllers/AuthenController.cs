@@ -22,15 +22,35 @@ public class AuthController : ControllerBase
     [HttpGet("google-login")]
     public IActionResult GoogleLogin()
     {
-        var properties = new AuthenticationProperties { RedirectUri = Url.Action("GoogleCallback", "Auth") };
+        var state = Guid.NewGuid().ToString();
+        HttpContext.Session.SetString("OAuthState", state);
+
+        var properties = new AuthenticationProperties
+        {
+            RedirectUri = Url.Action("GoogleCallback", "Auth"),
+            Items =
+            {
+                { "state", state }  
+            }
+        };
+
         return Challenge(properties, GoogleDefaults.AuthenticationScheme);
     }
+
 
     [HttpGet("google-callback")]
     public async Task<IActionResult> GoogleCallback()
     {
         var authenticateResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
         if (!authenticateResult.Succeeded) return BadRequest();
+
+        var expectedState = HttpContext.Session.GetString("OAuthState");
+        var returnedState = authenticateResult.Properties.Items["state"];
+
+        if (expectedState != returnedState)
+        {
+            return BadRequest("Invalid state parameter");
+        }
 
         var userEmail = authenticateResult.Principal.FindFirstValue(ClaimTypes.Email);
         var userName = authenticateResult.Principal.FindFirstValue(ClaimTypes.Name);
@@ -43,6 +63,7 @@ public class AuthController : ControllerBase
 
         return Redirect("http://localhost:3000/");
     }
+
 
     [HttpGet("current-user")]
     [Authorize]

@@ -17,19 +17,22 @@ namespace Service
     private readonly IUserRepository _userRepository;
     private readonly TokenGenerators _tokenGenerators;
     private readonly IAuthRepository _authRepository;
+    private readonly IConfiguration _configuration;
 
-    public AuthenticationService(IUserRepository userRepository, TokenGenerators tokenGenerators, IAuthRepository authRepository)
+    public AuthenticationService(IUserRepository userRepository, TokenGenerators tokenGenerators, IAuthRepository authRepository, IConfiguration configuration)
     {
         _userRepository = userRepository;
         _tokenGenerators = tokenGenerators;
         _authRepository = authRepository;
+        _configuration = configuration;
     }
 
     public async Task<ApiResult<Authenticator>> AuthenGoogleUser(string token)
     {
         try
         {
-            string clientId = "885905975406-hjr6lggkg7nkoosiip40der53gl1m2ls.apps.googleusercontent.com";
+            var clientId = _configuration["Authentication:Google:ClientId"].Trim();
+
 
             if (string.IsNullOrEmpty(clientId))
             {

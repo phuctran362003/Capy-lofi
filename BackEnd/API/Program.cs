@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,7 +54,7 @@ builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policyBuilder =>
     {
-        policyBuilder.WithOrigins("http://localhost:5278", "http://localhost:3000")
+        policyBuilder.WithOrigins("http://localhost:5278", "https://localhost:5278", "http://localhost:3000", "https://localhost:3000")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -124,6 +125,8 @@ app.UseRouting();
 
 // Enable CORS
 app.UseCors();
+// use Middleware 
+app.UseMiddleware<OAuthStateMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
