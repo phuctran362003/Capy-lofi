@@ -1,9 +1,11 @@
 ﻿using System.Security.Claims;
+using Domain.Entities;
 
 namespace Service.Interfaces;
 
-public interface ITokenGenerators
+public interface ITokenService
 {
-    (string accessToken, string refreshToken) GenerateTokens(List<Claim> claims);
-    bool ValidateRefreshToken(string token);
+    string GenerateToken(User user);
+    string GenerateRefreshToken();
+    ClaimsPrincipal GetPrincipalFromExpiredToken(string token);
 }

@@ -13,141 +13,151 @@ using Repository.Commons;
 namespace Service
 {
     public class AuthenticationService : IAuthenticationService
-    {
-        private readonly IUserRepository _userRepository;  
-        private readonly TokenGenerators _tokenGenerators;
-        private readonly IAuthRepository _authRepository;
+{
+    private readonly IUserRepository _userRepository;
+    private readonly TokenGenerators _tokenGenerators;
+    private readonly IAuthRepository _authRepository;
+    private readonly IConfiguration _configuration;
 
-        public AuthenticationService(IUserRepository userRepository, TokenGenerators tokenGenerators, IAuthRepository authRepository)
+    public AuthenticationService(IUserRepository userRepository, TokenGenerators tokenGenerators, IAuthRepository authRepository, IConfiguration configuration)
+    {
+        _userRepository = userRepository;
+        _tokenGenerators = tokenGenerators;
+        _authRepository = authRepository;
+        _configuration = configuration;
+    }
+
+    public async Task<ApiResult<Authenticator>> AuthenGoogleUser(string token)
+    {
+        try
         {
-            _userRepository = userRepository;
-            _tokenGenerators = tokenGenerators;
-            _authRepository = authRepository;
-        }
-        
-        public async Task<Authenticator> AuthenGoogleUser(string token)
-        {
-            string clientId = "797695382663-8o7c81nsa1g1k4re5k7152noj0ida3p7.apps.googleusercontent.com";
-    
+            var clientId = _configuration["Authentication:Google:ClientId"].Trim();
+
+
             if (string.IsNullOrEmpty(clientId))
             {
-                throw new Exception("ClientId is null!");
+                return ApiResult<Authenticator>.Error(null, "ClientId is null!");
             }
-    
+
             var settings = new GoogleJsonWebSignature.ValidationSettings()
             {
                 Audience = new List<string> { clientId }
             };
-    
+
             var payload = await GoogleJsonWebSignature.ValidateAsync(token, settings);
-    
+
             if (payload == null)
             {
-                throw new Exception("Credential incorrect!");
+                return ApiResult<Authenticator>.Error(null, "Credential incorrect!");
             }
-    
+
             var userEmail = payload.Email;
-            var user = await _userRepository.GetUserByEmail(userEmail);
-    
-            if (user == null)
+            var userFullName = payload.Name;
+            var userPhotoUrl = payload.Picture ?? string.Empty;
+
+            var user = await _userRepository.GetUserByEmailAsync(userEmail);
+
+            if (user != null)
             {
-                throw new ApplicationException("User not found.");
+                user.Name = userFullName;
+                user.DisplayName = userFullName;
+                user.PhotoUrl = userPhotoUrl;
+
+                await _userRepository.UpdateUserAsync(user);
             }
-    
+            else
+            {
+                user = new User
+                {
+                    Email = userEmail,
+                    Name = userFullName,
+                    DisplayName = userFullName,
+                    PhotoUrl = userPhotoUrl,
+                    Coins = 0,
+                    ProfileInfo = string.Empty,
+                    RefreshToken = string.Empty,
+                    LearningSessions = new List<LearningSession>(),
+                    Orders = new List<Order>(),
+                    UserMusics = new List<UserMusic>(),
+                    UserBackgrounds = new List<UserBackground>(),
+                    Feedbacks = new List<Feedback>()
+                };
+
+                await _userRepository.CreateUserAsync(user);
+            }
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.Id.ToString()),
                 new Claim(ClaimTypes.Email, user.Email),
             };
-    
+
             var (accessToken, refreshToken) = _tokenGenerators.GenerateTokens(claims);
-    
+
             await _authRepository.UpdateRefreshToken(user.Id, refreshToken);
-            return new Authenticator()
+
+            var authenticator = new Authenticator()
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
             };
-        }
 
-        
-       public async Task<ApiResult<object>> UserGetInfoSignUpByGoogle(string token)
-{
-    try
+            return ApiResult<Authenticator>.Succeed(authenticator, "User authenticated successfully.");
+        }
+        catch (Exception ex)
+        {
+            return ApiResult<Authenticator>.Fail(ex);
+        }
+    }
+
+    public User GetUserById(int id)
     {
-        string clientId = "797695382663-8o7c81nsa1g1k4re5k7152noj0ida3p7.apps.googleusercontent.com";
+        return _userRepository.GetUserByIdAsync(id).Result;
+    }
 
-        if (string.IsNullOrEmpty(clientId))
+    public async Task<ApiResult<Authenticator>> RefreshTokens(string accessToken, string refreshToken)
+    {
+        var principal = _tokenGenerators.GetPrincipalFromExpiredToken(accessToken);
+        if (principal == null)
         {
-            return ApiResult<object>.Error(null, "ClientId is null!");
+            return ApiResult<Authenticator>.Error(null, "Invalid access token");
         }
 
-        var settings = new GoogleJsonWebSignature.ValidationSettings()
+        if (!int.TryParse(principal.FindFirst(ClaimTypes.Name).Value, out var userId))
         {
-            Audience = new List<string> { clientId }
+            return ApiResult<Authenticator>.Error(null, "Invalid user ID in token");
+        }
+
+        var user = await _userRepository.GetUserByIdAsync(userId);
+        if (user == null || user.RefreshToken != refreshToken)
+        {
+            return ApiResult<Authenticator>.Error(null, "Invalid refresh token");
+        }
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, user.Id.ToString()), // Convert int to string for claim
+            new Claim(ClaimTypes.Email, user.Email)
         };
 
-        var payload = await GoogleJsonWebSignature.ValidateAsync(token, settings);
+        var (newAccessToken, newRefreshToken) = _tokenGenerators.GenerateTokens(claims);
+        await _authRepository.UpdateRefreshToken(user.Id, newRefreshToken);
 
-        if (payload == null)
+        var authenticator = new Authenticator()
         {
-            return ApiResult<object>.Error(null, "Credential incorrect!");
-        }
+            AccessToken = newAccessToken,
+            RefreshToken = newRefreshToken
+        };
 
-        var userEmail = payload.Email;
-        var userFullName = payload.Name;
-        var userPhotoUrl = payload.Picture ?? string.Empty;
-
-        var isCheckUser = await _userRepository.GetUserByEmail(userEmail);
-
-        if (isCheckUser != null)
-        {
-            // Update the user information from Google
-            isCheckUser.Name = userFullName;
-            isCheckUser.DisplayName = userFullName;
-            isCheckUser.PhotoUrl = userPhotoUrl;
-
-            await _userRepository.UpdateUser(isCheckUser);
-
-            // Create an object to store user details
-            var updatedUserDetails = new { Email = userEmail, Name = userFullName };
-
-            return ApiResult<object>.Succeed(updatedUserDetails, "User information updated successfully.");
-        }
-        else
-        {
-            // Create a new user entity with all necessary fields populated
-            var newUser = new User
-            {
-                Email = userEmail,
-                Name = userFullName,
-                DisplayName = userFullName, // Assuming display name is the same as full name
-                PhotoUrl = userPhotoUrl,
-                Coins = 0, // Assuming default coins are 0
-                ProfileInfo = string.Empty, // Assuming default profile info is empty
-                RefreshToken = string.Empty, // Assuming default refresh token is empty
-                LearningSessions = new List<LearningSession>(),
-                Orders = new List<Order>(),
-                UserMusics = new List<UserMusic>(),
-                UserBackgrounds = new List<UserBackground>(),
-                Feedbacks = new List<Feedback>()
-            };
-
-            await _userRepository.RegisterUser(newUser);
-
-            // Create an object to store user details
-            var userDetails = new { Email = userEmail, Name = userFullName };
-
-            return ApiResult<object>.Succeed(userDetails, "Successfully registered.");
-        }
+        return ApiResult<Authenticator>.Succeed(authenticator, "Tokens refreshed successfully.");
     }
-    catch (Exception ex)
-    {
-        return ApiResult<object>.Fail(ex);
-    }
+
+
 }
 
 
 
-    }
+
+
+
 }
