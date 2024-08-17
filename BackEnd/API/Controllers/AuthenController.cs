@@ -1,20 +1,21 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
+using System.Threading.Tasks;
 using Service.Interfaces;
+using TokenRequest = Domain.DTOs.Request.TokenRequest;
 
-namespace API.Controllers
+[ApiController]
+[Route("api/auth")]
+public class AuthController : ControllerBase
 {
-    [Route("api/v1/authentication")]
-    [ApiController]
-    public class AuthController : ControllerBase
-    {
-        private readonly IAuthenticationService _authenticationService;
-        private readonly IConfiguration _configuration;
+    private readonly IUserService _userService;
+    private readonly ITokenService _tokenService;
 
-        public AuthController(IAuthenticationService authenticationService, IConfiguration configuration)
-        {
-            _authenticationService = authenticationService;
-            _configuration = configuration;
-        }
+    public AuthController(IUserService userService, ITokenService tokenService)
+    {
+        _userService = userService;
+        _tokenService = tokenService;
+    }
 
 
         [HttpPost("google-callback")]
@@ -33,23 +34,50 @@ namespace API.Controllers
             }
         }
 
-        /// <summary>
-        /// Signs up a user using Google authentication.
-        /// </summary>
-        [HttpPost("google-signup")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> StudentSignupByGoogle([FromBody] string id_token)
+        if (!int.TryParse(principal.FindFirst(ClaimTypes.Name).Value, out var userId))
         {
-            try
-            {
-                var checkToken = await _authenticationService.UserGetInfoSignUpByGoogle(id_token);
-                return Ok(checkToken);
-            }
-            catch (ApplicationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return BadRequest("Invalid user ID in token");
         }
+
+        var user = await _userService.GetUserByIdAsync(userId);
+        if (user == null || user.RefreshToken != request.RefreshToken)
+        {
+            return BadRequest("Invalid refresh token");
+        }
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email)
+        };
+
+        var newAccessToken = _tokenService.GenerateToken(user);
+        var newRefreshToken = _tokenService.GenerateRefreshToken();
+
+        user.RefreshToken = newRefreshToken;
+        await _userService.UpdateUserAsync(user);
+
+        return Ok(new { AccessToken = newAccessToken, RefreshToken = newRefreshToken });
+    }
+
+    [HttpPost("logout")]
+    [Authorize]
+    public async Task<IActionResult> Logout()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdString, out var userId))
+        {
+            return BadRequest("Invalid user ID in token");
+        }
+
+        var user = await _userService.GetUserByIdAsync(userId);
+        if (user == null) return BadRequest();
+
+        user.RefreshToken = null;
+        await _userService.UpdateUserAsync(user);
+
+        Response.Cookies.Delete("jwt");
+
+        return Ok();
     }
 }

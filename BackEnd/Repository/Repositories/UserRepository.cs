@@ -5,26 +5,37 @@ using Domain.Entities;
 
 namespace Repository
 {
-    public class UserRepository : GenericRepository<User>, IUserRepository
+    public class UserRepository : IUserRepository
     {
-        public UserRepository(CapyLofiDbContext context, ICurrentTime timeService, IClaimsService claimsService)
-            : base(context, timeService, claimsService)
+        private readonly CapyLofiDbContext _context;
+
+        public UserRepository(CapyLofiDbContext context)
         {
+            _context = context;
         }
 
-        public async Task<User> GetUserByEmail(string email)
+        public async Task<User> GetUserByEmailAsync(string email)
         {
-            return await _dbSet.FirstOrDefaultAsync(u => u.Email == email);
+            return await _context.Users.SingleOrDefaultAsync(u => u.Email == email);
         }
 
-        public async Task RegisterUser(User user)
+        public async Task<User> GetUserByIdAsync(int userId)
         {
-            await AddAsync(user);
+            return await _context.Users.FindAsync(userId);
         }
 
-        public async Task<bool> UpdateUser(User user)
+        public async Task CreateUserAsync(User user)
         {
-           return await UpdateUser(user);
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task UpdateUserAsync(User user)
+        {
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
         }
     }
+
+
 }
