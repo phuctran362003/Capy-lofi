@@ -18,6 +18,17 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "CapyLofi API", Version = "v1" });
 });
 
+//Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", builder =>
+    {
+        builder.AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -36,6 +47,9 @@ app.UseHttpsRedirection();
 app.UseStaticFiles(); // Ensure this is placed correctly
 app.UseRouting();
 app.MapHub<ChatHub>("/chat-hub");
+
+// Use CORS
+app.UseCors("AllowAll");
 
 app.UseAuthentication(); // Ensure this comes before UseAuthorization
 app.UseAuthorization();

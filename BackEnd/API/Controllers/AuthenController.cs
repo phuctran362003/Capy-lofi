@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
 using Service.Interfaces;
 
 namespace API.Controllers
@@ -17,7 +16,8 @@ namespace API.Controllers
             _configuration = configuration;
         }
 
-        [HttpPost("google-login")]
+
+        [HttpPost("google-callback")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GoogleLogin([FromBody] string token)

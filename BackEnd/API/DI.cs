@@ -25,7 +25,7 @@ namespace API.Dependencies
 
             // Add ApplicationDbContext with SQL Server
             services.AddDbContext<CapyLofiDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("PhucString")));
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
             // Add authentication services
             services.AddAuthentication(options =>
