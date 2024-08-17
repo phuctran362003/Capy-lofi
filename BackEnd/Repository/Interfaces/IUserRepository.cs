@@ -2,8 +2,9 @@
 
 namespace Repository.Interfaces;
 
-public interface IUserRepository
+public interface IUserRepository :  IGenericRepository<User>
 {
+
     Task<User> GetUserByEmailAsync(string email);
     Task<User> GetUserByIdAsync(int userId);
     Task CreateUserAsync(User user);
