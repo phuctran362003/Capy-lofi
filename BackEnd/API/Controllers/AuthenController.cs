@@ -18,6 +18,19 @@ public class AuthController : ControllerBase
         _userService = userService;
         _tokenService = tokenService;
     }
+    //
+    // [HttpPost("login")]
+    // public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    // {
+    //     var user = await _userService.ValidateUserAsync(request.Username, request.Password);
+    //     if (user == null)
+    //     {
+    //         return Unauthorized(new { message = "Invalid username or password." });
+    //     }
+    //
+    //     var token = _tokenService.GenerateToken(user);
+    //     return Ok(new { token });
+    // }
 
     [HttpGet("google-login")]
     public IActionResult GoogleLogin()

@@ -15,18 +15,26 @@ public class UserService : IUserService
 
     public async Task<User> CreateOrUpdateUserAsync(string email, string name)
     {
-        var user = await _userRepository.GetUserByEmailAsync(email);
-        if (user == null)
+        var existingUser = await _userRepository.GetUserByEmailAsync(email);
+        
+        if (existingUser != null)
         {
-            user = new User { Email = email, Name = name };
-            await _userRepository.CreateUserAsync(user);
+            existingUser.Name = name;
+            await _userRepository.UpdateUserAsync(existingUser);
+            return existingUser;
         }
         else
         {
-            user.Name = name;
-            await _userRepository.UpdateUserAsync(user);
+            var newUser = new User
+            {
+                Email = email,
+                Name = name,
+                CreatedAt = DateTime.UtcNow 
+            };
+            
+            await _userRepository.CreateUserAsync(newUser);
+            return newUser;
         }
-        return user;
     }
 
     public async Task<User> GetUserByIdAsync(int userId)
@@ -39,4 +47,5 @@ public class UserService : IUserService
         await _userRepository.UpdateUserAsync(user);
     }
 }
+
 
