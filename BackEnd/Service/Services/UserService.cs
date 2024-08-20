@@ -29,7 +29,7 @@ public class UserService : IUserService
             {
                 Email = email,
                 Name = name,
-                CreatedAt = DateTime.UtcNow 
+                
             };
             
             await _userRepository.CreateUserAsync(newUser);

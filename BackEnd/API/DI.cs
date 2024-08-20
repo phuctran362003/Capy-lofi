@@ -8,8 +8,6 @@ using Service;
 using Service.Interfaces;
 using Service.Mappers;
 using Service.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using JwtSettings = Repository.Commons.JwtSettings;
 
 namespace API
@@ -52,7 +50,6 @@ namespace API
             services.AddScoped<IMusicRepository, MusicRepository>();
 
             // Add generic repository
-            services.AddScoped<IGenericRepository<User>, GenericRepository<User>>();
             services.AddScoped<IGenericRepository<Background>, GenericRepository<Background>>();
             services.AddScoped<IGenericRepository<Music>, GenericRepository<Music>>();
 

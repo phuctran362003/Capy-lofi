@@ -1,14 +1,18 @@
 ﻿using Domain.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace Repository;
 
-public class CapyLofiDbContext : DbContext
+
+
+public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
 {
     public CapyLofiDbContext(DbContextOptions<CapyLofiDbContext> options) : base(options)
     {
     }
-    public DbSet<User> Users { get; set; }
+
     public DbSet<Admin> Admins { get; set; }
     public DbSet<LearningSession> LearningSessions { get; set; }
     public DbSet<Order> Orders { get; set; }
@@ -20,9 +24,10 @@ public class CapyLofiDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        ConfigureBaseEntityProperties(modelBuilder);
+        // Call the base class to ensure Identity-related tables are configured
+        base.OnModelCreating(modelBuilder);
 
-        // Users
+        // Custom configurations for the User entity
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -114,16 +119,15 @@ public class CapyLofiDbContext : DbContext
                 .WithMany(u => u.Feedbacks)
                 .HasForeignKey(e => e.UserId);
         });
+
+        // Configure base entity properties
+        ConfigureBaseEntityProperties(modelBuilder);
     }
 
     private void ConfigureBaseEntityProperties(ModelBuilder modelBuilder)
     {
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            
-            
-            
-            
             if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
             {
                 modelBuilder.Entity(entityType.ClrType).Property<DateTime>("CreatedAt");
@@ -137,4 +141,5 @@ public class CapyLofiDbContext : DbContext
         }
     }
 }
+
 
