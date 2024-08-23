@@ -1,26 +1,30 @@
-﻿using Domain.DTOs.Response;
+﻿using System.Collections.Generic;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using Domain.DTOs.Response;
 using Domain.Entities;
 using Google.Apis.Auth;
 using Microsoft.Extensions.Configuration;
 using Repository.Commons;
 using Repository.Interfaces;
 using Service.Interfaces;
-using System.Security.Claims;
 
 namespace Service
 {
     public class AuthenticationService : IAuthenticationService
     {
         private readonly IUserRepository _userRepository;
-        private readonly TokenGenerators _tokenGenerators;
+        private readonly ITokenService _tokenService;  // Sử dụng ITokenService thay cho TokenGenerators
         private readonly IAuthRepository _authRepository;
+        private readonly IOtpService _otpService;
         private readonly IConfiguration _configuration;
 
-        public AuthenticationService(IUserRepository userRepository, TokenGenerators tokenGenerators, IAuthRepository authRepository, IConfiguration configuration)
+        public AuthenticationService(IUserRepository userRepository, ITokenService tokenService, IAuthRepository authRepository, IOtpService otpService, IConfiguration configuration)
         {
             _userRepository = userRepository;
-            _tokenGenerators = tokenGenerators;
+            _tokenService = tokenService;
             _authRepository = authRepository;
+            _otpService = otpService;
             _configuration = configuration;
         }
 
@@ -29,7 +33,6 @@ namespace Service
             try
             {
                 var clientId = _configuration["Authentication:Google:ClientId"].Trim();
-
 
                 if (string.IsNullOrEmpty(clientId))
                 {
@@ -84,12 +87,12 @@ namespace Service
                 }
 
                 var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-            };
+                {
+                    new Claim(ClaimTypes.Name, user.Id.ToString()),
+                    new Claim(ClaimTypes.Email, user.Email),
+                };
 
-                var (accessToken, refreshToken) = _tokenGenerators.GenerateTokens(claims);
+                var (accessToken, refreshToken) = _tokenService.GenerateTokens(claims);
 
                 await _authRepository.UpdateRefreshToken(user.Id, refreshToken);
 
@@ -107,20 +110,15 @@ namespace Service
             }
         }
 
-        public User GetUserById(int id)
-        {
-            return _userRepository.GetUserByIdAsync(id).Result;
-        }
-
         public async Task<ApiResult<Authenticator>> RefreshTokens(string accessToken, string refreshToken)
         {
-            var principal = _tokenGenerators.GetPrincipalFromExpiredToken(accessToken);
+            var principal = _tokenService.GetPrincipalFromExpiredToken(accessToken);
             if (principal == null)
             {
                 return ApiResult<Authenticator>.Error(null, "Invalid access token");
             }
 
-            if (!int.TryParse(principal.FindFirst(ClaimTypes.Name).Value, out var userId))
+            if (!int.TryParse(principal.FindFirst(ClaimTypes.Name)?.Value, out var userId))
             {
                 return ApiResult<Authenticator>.Error(null, "Invalid user ID in token");
             }
@@ -132,12 +130,12 @@ namespace Service
             }
 
             var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.Name, user.Id.ToString()), // Convert int to string for claim
-            new Claim(ClaimTypes.Email, user.Email)
-        };
+            {
+                new Claim(ClaimTypes.Name, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email)
+            };
 
-            var (newAccessToken, newRefreshToken) = _tokenGenerators.GenerateTokens(claims);
+            var (newAccessToken, newRefreshToken) = _tokenService.GenerateTokens(claims);
             await _authRepository.UpdateRefreshToken(user.Id, newRefreshToken);
 
             var authenticator = new Authenticator()
@@ -149,12 +147,49 @@ namespace Service
             return ApiResult<Authenticator>.Succeed(authenticator, "Tokens refreshed successfully.");
         }
 
+        public async Task<ApiResult<Authenticator>> VerifyOtpAndLoginAsync(string email, string otp)
+        {
+            var isValidOtp = await _otpService.ValidateOtpAsync(email, otp);
+            if (!isValidOtp)
+            {
+                return ApiResult<Authenticator>.Error(null, "Invalid OTP.");
+            }
 
+            // Kiểm tra xem người dùng đã tồn tại chưa
+            var user = await _userRepository.GetUserByEmailAsync(email);
+            if (user == null)
+            {
+                // Nếu người dùng chưa tồn tại, tạo người dùng mới
+                user = new User
+                {
+                    Email = email,
+                    Name = email.Split('@')[0],  // Giả định rằng tên người dùng là phần trước @ trong email
+                };
+                await _userRepository.CreateUserAsync(user);
+            }
+
+            // Tạo token cho người dùng
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email)
+            };
+
+            var (accessToken, refreshToken) = _tokenService.GenerateTokens(claims);
+            await _authRepository.UpdateRefreshToken(user.Id, refreshToken);
+
+            var authenticator = new Authenticator()
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken,
+            };
+
+            return ApiResult<Authenticator>.Succeed(authenticator, "User authenticated successfully.");
+        }
+
+        public User GetUserById(int id)
+        {
+            return _userRepository.GetUserByIdAsync(id).Result;
+        }
     }
-
-
-
-
-
-
 }

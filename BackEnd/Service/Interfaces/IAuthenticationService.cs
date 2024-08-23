@@ -10,4 +10,5 @@ public interface IAuthenticationService
     Task<ApiResult<Authenticator>> AuthenGoogleUser(string token);
     User GetUserById(int id);
     Task<ApiResult<Authenticator>> RefreshTokens(string accessToken, string refreshToken);
+    Task<ApiResult<Authenticator>> VerifyOtpAndLoginAsync(string email, string otp);
 }

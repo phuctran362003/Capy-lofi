@@ -13,7 +13,6 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
     {
     }
 
-    public DbSet<Admin> Admins { get; set; }
     public DbSet<LearningSession> LearningSessions { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<Music> Musics { get; set; }
@@ -24,10 +23,10 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Call the base class to ensure Identity-related tables are configured
+        // Gọi base để đảm bảo cấu hình các bảng liên quan đến Identity
         base.OnModelCreating(modelBuilder);
 
-        // Custom configurations for the User entity
+        // Cấu hình tùy chỉnh cho User
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -38,16 +37,7 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
             entity.Property(e => e.PhotoUrl).HasMaxLength(255);
         });
 
-        // Admins
-        modelBuilder.Entity<Admin>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
-            entity.HasIndex(e => e.Email).IsUnique();
-            entity.Property(e => e.Password).IsRequired().HasMaxLength(255);
-        });
-
-        // LearningSessions
+        // Cấu hình các thực thể khác như LearningSessions, Orders, Musics, Backgrounds, UserMusic, UserBackgrounds, Feedbacks
         modelBuilder.Entity<LearningSession>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -58,7 +48,6 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
                 .HasForeignKey(e => e.UserId);
         });
 
-        // Orders
         modelBuilder.Entity<Order>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -69,7 +58,6 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
                 .HasForeignKey(e => e.UserId);
         });
 
-        // Music
         modelBuilder.Entity<Music>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -77,7 +65,6 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
             entity.Property(e => e.MusicUrl).IsRequired().HasMaxLength(255);
         });
 
-        // Backgrounds
         modelBuilder.Entity<Background>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -85,7 +72,6 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
             entity.Property(e => e.BackgroundUrl).IsRequired().HasMaxLength(255);
         });
 
-        // UserMusic
         modelBuilder.Entity<UserMusic>(entity =>
         {
             entity.HasKey(e => new { e.UserId, e.MusicId });
@@ -97,7 +83,6 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
                 .HasForeignKey(e => e.MusicId);
         });
 
-        // UserBackgrounds
         modelBuilder.Entity<UserBackground>(entity =>
         {
             entity.HasKey(e => new { e.UserId, e.BackgroundId });
@@ -109,7 +94,6 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
                 .HasForeignKey(e => e.BackgroundId);
         });
 
-        // Feedback
         modelBuilder.Entity<Feedback>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -120,7 +104,7 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
                 .HasForeignKey(e => e.UserId);
         });
 
-        // Configure base entity properties
+        // Cấu hình các thuộc tính cơ bản của thực thể
         ConfigureBaseEntityProperties(modelBuilder);
     }
 
@@ -141,5 +125,6 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
         }
     }
 }
+
 
 

@@ -1,13 +1,13 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using Domain.Entities;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Service.Interfaces;
 
-namespace Service.Services;
 public class TokenService : ITokenService
 {
     private readonly IConfiguration _configuration;
@@ -67,5 +67,23 @@ public class TokenService : ITokenService
 
         return principal;
     }
-}
 
+    // Phương thức mới để tạo đồng thời Access Token và Refresh Token
+    public (string accessToken, string refreshToken) GenerateTokens(IEnumerable<Claim> claims)
+    {
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        var token = new JwtSecurityToken(
+            _configuration["Jwt:Issuer"],
+            _configuration["Jwt:Issuer"],
+            claims,
+            expires: DateTime.Now.AddMinutes(15),
+            signingCredentials: creds);
+
+        var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
+        var refreshToken = GenerateRefreshToken();
+
+        return (accessToken, refreshToken);
+    }
+}

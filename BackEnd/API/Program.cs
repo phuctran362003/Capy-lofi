@@ -107,25 +107,25 @@ builder.Services.AddAuthentication(options =>
 
 var app = builder.Build();
 // Initialize the database
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    try
-    {
-        var context = services.GetRequiredService<CapyLofiDbContext>();
-        DbInitializer.Initialize(context);
-    }
-    catch (Exception ex)
-    {
-        // Log errors if any
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "An error occurred while seeding the database.");
-    }
-}
+// using (var scope = app.Services.CreateScope())
+// {
+//     var services = scope.ServiceProvider;
+//     try
+//     {
+//         var context = services.GetRequiredService<CapyLofiDbContext>();
+//         DbInitializer.Initialize(context);
+//     }
+//     catch (Exception ex)
+//     {
+//         // Log errors if any
+//         var logger = services.GetRequiredService<ILogger<Program>>();
+//         logger.LogError(ex, "An error occurred while seeding the database.");
+//     }
+// }
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
