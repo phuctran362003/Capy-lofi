@@ -1,7 +1,4 @@
 ﻿using Domain.Entities;
-using Jose;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.EntityFrameworkCore;
 using Repository;
 using Repository.Commons;
@@ -11,8 +8,11 @@ using Service;
 using Service.Interfaces;
 using Service.Mappers;
 using Service.Services;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using JwtSettings = Repository.Commons.JwtSettings;
 
-namespace API.Dependencies
+namespace API
 {
     public static class DI
     {
@@ -25,21 +25,7 @@ namespace API.Dependencies
 
             // Add ApplicationDbContext with SQL Server
             services.AddDbContext<CapyLofiDbContext>(options =>
-                options.UseSqlServer(configuration.GetConnectionString("PhucString")));
-
-            // Add authentication services
-            services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-            })
-                .AddCookie()
-                .AddGoogle(options =>
-                {
-                    options.ClientId = configuration["Authentication:Google:ClientId"];
-                    options.ClientSecret = configuration["Authentication:Google:ClientSecret"];
-                });
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
             services.AddScoped<ICurrentTime, CurrentTime>();
             services.AddScoped<IClaimsService, ClaimsService>();
@@ -47,7 +33,10 @@ namespace API.Dependencies
             // Add UNIT OF WORK
             services.AddProjectUnitOfWork();
 
-            //Others
+            // Register IAuthenticationService
+            services.AddScoped<IAuthenticationService, AuthenticationService>();
+
+            // Others
             services.AddAutoMapper(typeof(MapperConfigProfile).Assembly);
             services.AddHttpContextAccessor();
 
@@ -70,6 +59,8 @@ namespace API.Dependencies
             // Add services
             services.AddScoped<IAuthenticationService, AuthenticationService>();
             services.AddScoped<IBackgroundItemService, BackgroundItemService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IMusicService, MusicService>();
             services.AddSingleton<TokenGenerators>();
 
@@ -79,6 +70,4 @@ namespace API.Dependencies
             return services;
         }
     }
-
-
 }

@@ -1,55 +1,128 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
+﻿using Domain.DTOs.Request;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using Service.Interfaces;
+using System.Security.Claims;
 
-namespace API.Controllers
+[ApiController]
+[Route("api/auth")]
+public class AuthController : ControllerBase
 {
-    [Route("api/v1/authentication")]
-    [ApiController]
-    public class AuthController : ControllerBase
+    private readonly IUserService _userService;
+    private readonly ITokenService _tokenService;
+
+    public AuthController(IUserService userService, ITokenService tokenService)
     {
-        private readonly IAuthenticationService _authenticationService;
-        private readonly IConfiguration _configuration;
+        _userService = userService;
+        _tokenService = tokenService;
+    }
 
-        public AuthController(IAuthenticationService authenticationService, IConfiguration configuration)
+    [HttpPost("google-callback")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GoogleCallback([FromBody] string token)
+    {
+        try
         {
-            _authenticationService = authenticationService;
-            _configuration = configuration;
+            var authenticateResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+            if (!authenticateResult.Succeeded) return BadRequest();
+
+            var expectedState = HttpContext.Session.GetString("OAuthState");
+            var returnedState = authenticateResult.Properties.Items["state"];
+
+            if (expectedState != returnedState)
+            {
+                return BadRequest("Invalid state parameter");
+            }
+
+            var userEmail = authenticateResult.Principal.FindFirstValue(ClaimTypes.Email);
+            var userName = authenticateResult.Principal.FindFirstValue(ClaimTypes.Name);
+
+            var user = await _userService.CreateOrUpdateUserAsync(userEmail, userName);
+
+            var jwtToken = _tokenService.GenerateToken(user);
+
+            Response.Cookies.Append("jwt", jwtToken, new CookieOptions { HttpOnly = true, Secure = true });
+
+            return Redirect("http://localhost:3000/");
+        }
+        catch (ApplicationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpGet("current-user")]
+    [Authorize]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdString, out var userId))
+        {
+            return BadRequest("Invalid user ID in token");
         }
 
-        [HttpPost("google-login")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GoogleLogin([FromBody] string token)
+        var user = await _userService.GetUserByIdAsync(userId);
+        if (user == null) return NotFound();
+
+        return Ok(user);
+    }
+
+    [HttpPost("refresh-token")]
+    public async Task<IActionResult> RefreshToken([FromBody] TokenRequest request)
+    {
+        var principal = _tokenService.GetPrincipalFromExpiredToken(request.AccessToken);
+        if (principal == null)
         {
-            try
-            {
-                var checkToken = await _authenticationService.AuthenGoogleUser(token);
-                return Ok(checkToken);
-            }
-            catch (ApplicationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return BadRequest("Invalid access token");
         }
 
-        /// <summary>
-        /// Signs up a user using Google authentication.
-        /// </summary>
-        [HttpPost("google-signup")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> StudentSignupByGoogle([FromBody] string id_token)
+        if (!int.TryParse(principal.FindFirst(ClaimTypes.Name).Value, out var userId))
         {
-            try
-            {
-                var checkToken = await _authenticationService.UserGetInfoSignUpByGoogle(id_token);
-                return Ok(checkToken);
-            }
-            catch (ApplicationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            return BadRequest("Invalid user ID in token");
         }
+
+        var user = await _userService.GetUserByIdAsync(userId);
+        if (user == null || user.RefreshToken != request.RefreshToken)
+        {
+            return BadRequest("Invalid refresh token");
+        }
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email)
+        };
+
+        var newAccessToken = _tokenService.GenerateToken(user);
+        var newRefreshToken = _tokenService.GenerateRefreshToken();
+
+        user.RefreshToken = newRefreshToken;
+        await _userService.UpdateUserAsync(user);
+
+        return Ok(new { AccessToken = newAccessToken, RefreshToken = newRefreshToken });
+    }
+
+    [HttpPost("logout")]
+    [Authorize]
+    public async Task<IActionResult> Logout()
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdString, out var userId))
+        {
+            return BadRequest("Invalid user ID in token");
+        }
+
+        var user = await _userService.GetUserByIdAsync(userId);
+        if (user == null) return BadRequest();
+
+        user.RefreshToken = null;
+        await _userService.UpdateUserAsync(user);
+
+        Response.Cookies.Delete("jwt");
+
+        return Ok();
     }
 }

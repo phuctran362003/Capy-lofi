@@ -11,17 +11,17 @@
             return new ApiResult<T> { Success = true, Data = data, Message = message };
         }
 
-        public static ApiResult<T> Error(T? data, string Message)
+        public static ApiResult<T> Error(T? data, string message)
         {
-            return new ApiResult<T> { Success = false, Data = data, Message = Message };
+            return new ApiResult<T> { Success = false, Data = data, Message = message };
         }
 
-        public static ApiResult<object> Fail(Exception ex)
+        public static ApiResult<T> Fail(Exception ex)
         {
-            return new ApiResult<object>
+            return new ApiResult<T>
             {
                 Success = false,
-                Data = null,
+                Data = default,
                 Message = ex.Message
             };
         }

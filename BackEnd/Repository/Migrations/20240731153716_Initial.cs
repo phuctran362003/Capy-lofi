@@ -39,6 +39,7 @@ namespace Repository.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     BackgroundUrl = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     Size = table.Column<float>(type: "real", nullable: false),
                     Price = table.Column<int>(type: "int", nullable: false),
@@ -63,6 +64,7 @@ namespace Repository.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     MusicUrl = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     ThumbnailUrl = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Size = table.Column<float>(type: "real", nullable: false),
@@ -94,6 +96,7 @@ namespace Repository.Migrations
                     PhotoUrl = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
                     Coins = table.Column<int>(type: "int", nullable: false),
                     ProfileInfo = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RefreshToken = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     CreatedBy = table.Column<int>(type: "int", nullable: true),
                     ModifiedAt = table.Column<DateTime>(type: "datetime2", nullable: true),

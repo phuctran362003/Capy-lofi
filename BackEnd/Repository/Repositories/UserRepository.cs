@@ -7,24 +7,32 @@ namespace Repository
 {
     public class UserRepository : GenericRepository<User>, IUserRepository
     {
+
         public UserRepository(CapyLofiDbContext context, ICurrentTime timeService, IClaimsService claimsService)
             : base(context, timeService, claimsService)
         {
         }
 
-        public async Task<User> GetUserByEmail(string email)
+        public async Task<User> GetUserByEmailAsync(string email)
         {
-            return await _dbSet.FirstOrDefaultAsync(u => u.Email == email);
+            return await _dbSet.SingleOrDefaultAsync(u => u.Email == email);
         }
 
-        public async Task RegisterUser(User user)
+        public async Task<User> GetUserByIdAsync(int userId)
         {
-            await AddAsync(user);
+            return await _dbSet.FindAsync(userId);
         }
 
-        public async Task<bool> UpdateUser(User user)
+        public async Task CreateUserAsync(User user)
         {
-           return await UpdateUser(user);
+            await _dbSet.AddAsync(user);
+        }
+
+        public async Task UpdateUserAsync(User user)
+        {
+            _dbSet.Update(user);
         }
     }
+
+
 }
