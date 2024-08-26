@@ -1,7 +1,9 @@
-﻿namespace Service.Interfaces;
+﻿using Repository.Commons;
+
+namespace Service.Interfaces;
 
 public interface IOtpService
 {
-    Task<string> GenerateOtpAsync(string email);
-    Task<bool> ValidateOtpAsync(string email, string otp);
+    Task<ApiResult<string>> GenerateOtpAsync(string email);
+    Task<ApiResult<string>> ValidateOtpAsync(string email, string otp);
 }

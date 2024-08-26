@@ -28,9 +28,18 @@ namespace Repository
 
         public async Task CreateUserAsync(User user)
         {
-            await _dbSet.AddAsync(user);
-            await _context.SaveChangesAsync(); // Ensure changes are persisted to the database
+            try
+            {
+                await _dbSet.AddAsync(user);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Log the exception or handle it accordingly
+                throw new Exception("Failed to create user", ex);
+            }
         }
+
 
         public async Task UpdateUserAsync(User user)
         {
@@ -38,7 +47,4 @@ namespace Repository
             await _context.SaveChangesAsync(); // Ensure changes are persisted to the database
         }
     }
-
-
-
 }

@@ -149,10 +149,14 @@ namespace Service
 
         public async Task<ApiResult<Authenticator>> VerifyOtpAndLoginAsync(string email, string otp)
         {
-            var isValidOtp = await _otpService.ValidateOtpAsync(email, otp);
-            if (!isValidOtp)
+            // Gọi phương thức ValidateOtpAsync và lấy kết quả
+            var otpResult = await _otpService.ValidateOtpAsync(email, otp);
+    
+            // Kiểm tra kết quả ValidateOtpAsync
+            if (!otpResult.Success)
             {
-                return ApiResult<Authenticator>.Error(null, "Invalid OTP.");
+                // Trả về lỗi nếu OTP không hợp lệ
+                return ApiResult<Authenticator>.Error(null, otpResult.Message ?? "Invalid OTP.");
             }
 
             // Kiểm tra xem người dùng đã tồn tại chưa
@@ -163,7 +167,7 @@ namespace Service
                 user = new User
                 {
                     Email = email,
-                    Name = email.Split('@')[0],  // Giả định rằng tên người dùng là phần trước @ trong email
+                    Name = email.Split('@')[0],
                 };
                 await _userRepository.CreateUserAsync(user);
             }
@@ -178,14 +182,17 @@ namespace Service
             var (accessToken, refreshToken) = _tokenService.GenerateTokens(claims);
             await _authRepository.UpdateRefreshToken(user.Id, refreshToken);
 
-            var authenticator = new Authenticator()
+            // Tạo đối tượng Authenticator để trả về
+            var authenticator = new Authenticator
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
             };
 
+            // Trả về kết quả thành công
             return ApiResult<Authenticator>.Succeed(authenticator, "User authenticated successfully.");
         }
+
 
         public User GetUserById(int id)
         {
