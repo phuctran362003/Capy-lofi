@@ -513,7 +513,6 @@ namespace Repository.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.Property<string>("Otp")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PasswordHash")

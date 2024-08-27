@@ -14,7 +14,7 @@ public class User : IdentityUser<int>
     // The RefreshToken property can be handled differently if needed
     public string? RefreshToken { get; set; }
     
-    public string Otp { get; set; }
+    public string? Otp { get; set; }
 
     // Navigation properties for related entities
     public ICollection<LearningSession> LearningSessions { get; set; }

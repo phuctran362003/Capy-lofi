@@ -1,15 +1,15 @@
 ﻿using Domain.DTOs.Request;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Service.Interfaces;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
 using Repository.Commons;
 
+namespace API.Controllers;
+
 [ApiController]
-[Route("api/auth")]
-public class AuthController : ControllerBase
+[Route("api/v1/auth")]
+public class AuthController : Controller
 {
     private readonly IUserService _userService;
     private readonly ITokenService _tokenService;
@@ -42,10 +42,10 @@ public class AuthController : ControllerBase
             var result = await _userService.CreateOrUpdateUserAndSendOtpAsync(request.Email, request.Name);
             if (!result.Success)
             {
-                return BadRequest(result);  // Return the ApiResult object directly
+                return BadRequest(result); // Return the ApiResult object directly
             }
 
-            return Ok(result);  // Return the ApiResult object directly
+            return Ok(result); // Return the ApiResult object directly
         }
         catch (Exception ex)
         {
@@ -85,7 +85,8 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             // Log the exception details here if necessary
-            return StatusCode(StatusCodes.Status500InternalServerError, $"An error occurred while verifying OTP: {ex.Message}");
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                $"An error occurred while verifying OTP: {ex.Message}");
         }
     }
 
@@ -157,9 +158,8 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             // Log the exception details here if necessary
-            return StatusCode(StatusCodes.Status500InternalServerError, $"An error occurred while retrieving the current user: {ex.Message}");
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                $"An error occurred while retrieving the current user: {ex.Message}");
         }
     }
-
 }
-
