@@ -17,73 +17,54 @@ public class TokenService : ITokenService
         _configuration = configuration;
     }
 
-    public string GenerateToken(User user)
+    public Tokens GenerateTokens(User user)
     {
-        var claims = new List<Claim>
+        // Get JWT settings from configuration
+        var jwtSettings = _configuration.GetSection("JwtSettings");
+        var secretKey = jwtSettings["SecretKey"];
+        var issuer = jwtSettings["Issuer"];
+        var audience = jwtSettings["Audience"];
+        var accessTokenExpirationMinutes = int.Parse(jwtSettings["AccessTokenExpirationMinutes"]);
+        var refreshTokenExpirationMinutes = int.Parse(jwtSettings["RefreshTokenExpirationMinutes"]);
+
+        // Create claims for the token
+        var claims = new[]
         {
-            new Claim(ClaimTypes.Name, user.Id.ToString()), // Ensure the ID is stored as a string
-            new Claim(ClaimTypes.Email, user.Email)
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+        // Generate Access Token
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var accessToken = new JwtSecurityToken(
+            issuer: issuer,
+            audience: audience,
+            claims: claims,
+            expires: DateTime.Now.AddMinutes(accessTokenExpirationMinutes),
+            signingCredentials: creds
+        );
 
-        var token = new JwtSecurityToken(
-            _configuration["Jwt:Issuer"],
-            _configuration["Jwt:Issuer"],
-            claims,
-            expires: DateTime.Now.AddMinutes(15),
-            signingCredentials: creds);
+        var accessTokenString = new JwtSecurityTokenHandler().WriteToken(accessToken);
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-
-    public string GenerateRefreshToken()
-    {
-        var randomNumber = new byte[32];
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(randomNumber);
-            return Convert.ToBase64String(randomNumber);
-        }
-    }
-
-    public ClaimsPrincipal GetPrincipalFromExpiredToken(string token)
-    {
-        var tokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateAudience = false,
-            ValidateIssuer = false,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"])),
-            ValidateLifetime = false
-        };
-
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out var securityToken);
-        var jwtSecurityToken = securityToken as JwtSecurityToken;
-        if (jwtSecurityToken == null || !jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
-            throw new SecurityTokenException("Invalid token");
-
-        return principal;
-    }
-
-    // Phương thức mới để tạo đồng thời Access Token và Refresh Token
-    public (string accessToken, string refreshToken) GenerateTokens(IEnumerable<Claim> claims)
-    {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            _configuration["Jwt:Issuer"],
-            _configuration["Jwt:Issuer"],
-            claims,
-            expires: DateTime.Now.AddMinutes(15),
-            signingCredentials: creds);
-
-        var accessToken = new JwtSecurityTokenHandler().WriteToken(token);
+        // Generate Refresh Token
         var refreshToken = GenerateRefreshToken();
 
-        return (accessToken, refreshToken);
+        return new Tokens
+        {
+            AccessToken = accessTokenString,
+            RefreshToken = refreshToken
+        };
+    }
+
+    private string GenerateRefreshToken()
+    {
+        var randomBytes = new byte[32];
+        using (var rng = new System.Security.Cryptography.RNGCryptoServiceProvider())
+        {
+            rng.GetBytes(randomBytes);
+            return Convert.ToBase64String(randomBytes);
+        }
     }
 }

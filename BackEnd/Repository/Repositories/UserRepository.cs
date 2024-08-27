@@ -2,49 +2,54 @@
 using Microsoft.EntityFrameworkCore;
 using System.Threading.Tasks;
 using Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace Repository
 {
+
     public class UserRepository : IUserRepository
     {
-        private readonly CapyLofiDbContext _context;
-        private readonly DbSet<User> _dbSet;
+        //Microsoft.AspNetCore.Identity;
+        private readonly UserManager<User> _userManager;
 
-        public UserRepository(CapyLofiDbContext context, ICurrentTime timeService, IClaimsService claimsService)
+        public UserRepository(UserManager<User> userManager)
         {
-            _context = context;
-            _dbSet = _context.Set<User>();
+            _userManager = userManager;
+        }
+
+
+        public async Task<User> GetUserByIdAsync(int userId)
+        {
+            return await _userManager.FindByIdAsync(userId.ToString());
         }
 
         public async Task<User> GetUserByEmailAsync(string email)
         {
-            return await _dbSet.SingleOrDefaultAsync(u => u.Email == email);
+            return await _userManager.FindByEmailAsync(email);
         }
 
-        public async Task<User> GetUserByIdAsync(int userId)
+        public async Task<IdentityResult> CreateUserAsync(User user)
         {
-            return await _dbSet.FindAsync(userId);
+            return await _userManager.CreateAsync(user);
         }
 
-        public async Task CreateUserAsync(User user)
+        public async Task UpdateOtpAsync(User user, string otpCode)
         {
-            try
-            {
-                await _dbSet.AddAsync(user);
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                // Log the exception or handle it accordingly
-                throw new Exception("Failed to create user", ex);
-            }
+            user.Otp = otpCode;
+            await _userManager.UpdateAsync(user);
         }
 
-
-        public async Task UpdateUserAsync(User user)
+        public async Task<bool> VerifyOtpAsync(User user, string otpCode)
         {
-            _dbSet.Update(user);
-            await _context.SaveChangesAsync(); // Ensure changes are persisted to the database
+            return user.Otp == otpCode;
+        }
+
+        public async Task UpdateRefreshTokenAsync(User user, string refreshToken)
+        {
+            user.RefreshToken = refreshToken;
+            await _userManager.UpdateAsync(user);
         }
     }
+
+
 }

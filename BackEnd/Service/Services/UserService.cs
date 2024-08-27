@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using System.Threading.Tasks;
+using Domain.DTOs.UserDTOs;
 using Domain.Entities;
 using Repository.Commons;
 using Repository.Interfaces;
@@ -10,14 +11,12 @@ namespace Service.Services
     public class UserService : IUserService
     {
         private readonly IUserRepository _userRepository;
-        private readonly ITokenService _tokenService;
-        private readonly IOtpService _otpService;
+        private readonly EmailService _emailService;
 
-        public UserService(IUserRepository userRepository, ITokenService tokenService, IOtpService otpService)
+        public UserService(IUserRepository userRepository, EmailService emailService)
         {
-            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
-            _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
-            _otpService = otpService ?? throw new ArgumentNullException(nameof(otpService));
+            _userRepository = userRepository;
+            _emailService = emailService;
         }
 
         public async Task<ApiResult<User>> GetUserByIdAsync(int userId)
@@ -29,7 +28,6 @@ namespace Service.Services
                 {
                     return ApiResult<User>.Error(null, "User not found.");
                 }
-
                 return ApiResult<User>.Succeed(user, "User retrieved successfully.");
             }
             catch (Exception ex)
@@ -38,79 +36,82 @@ namespace Service.Services
             }
         }
 
-        public async Task<ApiResult<bool>> UpdateUserAsync(User user)
+        public async Task<ApiResult<UserDto>> CreateOrUpdateUserAndSendOtpAsync(string email, string name)
         {
             try
             {
-                await _userRepository.UpdateUserAsync(user);
-                return ApiResult<bool>.Succeed(true, "User updated successfully.");
-            }
-            catch (Exception ex)
-            {
-                return ApiResult<bool>.Fail(ex);
-            }
-        }
-
-        public async Task<ApiResult<string>> CreateOrUpdateUserAndSendOtpAsync(string email, string name)
-        {
-            try
-            {
-                if (string.IsNullOrEmpty(email))
-                {
-                    return ApiResult<string>.Error(null, "Email cannot be null or empty.");
-                }
-
+                // Generate a 6-digit OTP
+                var otpCode = GenerateRandomOtp();
                 var user = await _userRepository.GetUserByEmailAsync(email);
+
                 if (user != null)
                 {
-                    // Nếu người dùng đã tồn tại, tạo token và trả về
-                    var claims = new List<Claim>
-                    {
-                        new Claim(ClaimTypes.Name, user.Id.ToString()),
-                        new Claim(ClaimTypes.Email, user.Email)
-                    };
-
-                    var (accessToken, refreshToken) = _tokenService.GenerateTokens(claims);
-
-                    // Cập nhật refresh token trong bảng người dùng
-                    user.RefreshToken = refreshToken;
-                    await _userRepository.UpdateUserAsync(user);
-
-                    return ApiResult<string>.Succeed(accessToken, "User authenticated successfully.");
+                    // User exists, update OTP
+                    await _userRepository.UpdateOtpAsync(user, otpCode);
                 }
                 else
                 {
-                    // Nếu người dùng không tồn tại, tạo người dùng mới và gửi OTP
+                    // User does not exist, create new user with default values
                     user = new User
                     {
                         Email = email,
-                        UserName = name ?? email.Split('@')[0] ?? string.Empty, // Xử lý null hoặc empty
-                        DisplayName = name ?? email.Split('@')[0] ?? string.Empty, // Xử lý null hoặc empty
-                        PhotoUrl = string.Empty, // Giá trị mặc định cho PhotoUrl
-                        Coins = 0, // Giá trị mặc định cho Coins
-                        ProfileInfo = string.Empty, // Giá trị mặc định cho ProfileInfo
-                        RefreshToken = string.Empty, // Giá trị mặc định cho RefreshToken
-                        Otp = string.Empty, // Giá trị mặc định cho Otp
-
-                        // Khởi tạo các thuộc tính điều hướng (nếu có)
-                        LearningSessions = new List<LearningSession>(),
-                        Orders = new List<Order>(),
-                        UserMusics = new List<UserMusic>(),
-                        UserBackgrounds = new List<UserBackground>(),
-                        Feedbacks = new List<Feedback>()
+                        UserName = email,
+                        Name = name ?? string.Empty,
+                        Otp = otpCode,
+                        DisplayName = name ?? string.Empty,
+                        EmailConfirmed = true
                     };
 
-                    await _userRepository.CreateUserAsync(user);
-
-                    // Gửi OTP sau khi tạo người dùng
-                    var otpResult = await _otpService.GenerateOtpAsync(email);
-                    if (!otpResult.Success)
+                    var result = await _userRepository.CreateUserAsync(user);
+                    if (!result.Succeeded)
                     {
-                        return ApiResult<string>.Error(null, otpResult.Message ?? "Failed to send OTP.");
+                        return ApiResult<UserDto>.Error(null, "Failed to create user.");
                     }
-
-                    return ApiResult<string>.Succeed(null, "User created and OTP sent to email.");
                 }
+
+                // Send OTP via email
+                await _emailService.SendOtpAsync(email, otpCode);
+
+                // Create a DTO with only the necessary fields
+                var userDto = new UserDto
+                {
+                    Name = user.Name,
+                    DisplayName = user.DisplayName,
+                    Email = user.Email,
+                };
+
+                return ApiResult<UserDto>.Succeed(userDto, "OTP sent successfully.");
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<UserDto>.Fail(ex);
+            }
+        }
+
+
+
+        public async Task<ApiResult<string>> GenerateOtpCodeAsync(string email)
+        {
+            try
+            {
+                var otpCode = GenerateRandomOtp();
+                var user = await _userRepository.GetUserByEmailAsync(email);
+
+                if (user != null)
+                {
+                    await _userRepository.UpdateOtpAsync(user, otpCode);
+                }
+                else
+                {
+                    user = new User { Email = email, UserName = email, Otp = otpCode };
+                    var result = await _userRepository.CreateUserAsync(user);
+                    if (!result.Succeeded)
+                    {
+                        return ApiResult<string>.Error(null, "Failed to create user for OTP generation.");
+                    }
+                }
+
+                return ApiResult<string>.Succeed(otpCode, "OTP generated successfully.");
             }
             catch (Exception ex)
             {
@@ -118,42 +119,44 @@ namespace Service.Services
             }
         }
 
-
-        public async Task<ApiResult<string>> VerifyOtpAndLoginAsync(string email, string otp)
+        public async Task<ApiResult<User>> VerifyOtpAsync(string email, string otpCode)
         {
-            var otpResult = await _otpService.ValidateOtpAsync(email, otp);
-
-            if (!otpResult.Success)
+            try
             {
-                return ApiResult<string>.Error(null, otpResult.Message ?? "Invalid OTP.");
-            }
+                var user = await _userRepository.GetUserByEmailAsync(email);
 
-            var user = await _userRepository.GetUserByEmailAsync(email);
-            if (user == null)
-            {
-                // Tạo người dùng mới sau khi OTP được xác minh thành công
-                user = new User
+                if (user == null || !await _userRepository.VerifyOtpAsync(user, otpCode))
                 {
-                    Email = email,
-                    UserName = email.Split('@')[0],
-                    DisplayName = email.Split('@')[0]
-                };
-                await _userRepository.CreateUserAsync(user);
+                    return ApiResult<User>.Error(null, "Invalid OTP.");
+                }
+
+                return ApiResult<User>.Succeed(user, "OTP verified successfully.");
             }
-
-            var claims = new List<Claim>
+            catch (Exception ex)
             {
-                new Claim(ClaimTypes.Name, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email)
-            };
+                return ApiResult<User>.Fail(ex);
+            }
+        }
 
-            var (accessToken, refreshToken) = _tokenService.GenerateTokens(claims);
+        public async Task<ApiResult<bool>> UpdateRefreshTokenAsync(User user, string refreshToken)
+        {
+            try
+            {
+                await _userRepository.UpdateRefreshTokenAsync(user, refreshToken);
+                return ApiResult<bool>.Succeed(true, "Refresh token updated successfully.");
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<bool>.Fail(ex);
+            }
+        }
 
-            // Cập nhật refresh token trong bảng người dùng
-            user.RefreshToken = refreshToken;
-            await _userRepository.UpdateUserAsync(user);
-
-            return ApiResult<string>.Succeed(accessToken, "User authenticated successfully.");
+        private string GenerateRandomOtp()
+        {
+            var random = new Random();
+            return random.Next(100000, 999999).ToString(); // 6-digit OTP
         }
     }
+
+
 }

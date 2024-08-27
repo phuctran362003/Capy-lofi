@@ -34,7 +34,7 @@ namespace API
         
         
         // Đăng ký EmailService cho Identity
-        services.AddScoped<IEmailSender<User>, EmailService>();
+        services.AddScoped<IEmailSender, EmailService>();
 
 
         // Add common services
@@ -42,11 +42,8 @@ namespace API
         services.AddScoped<IClaimsService, ClaimsService>();
         services.AddHttpContextAccessor();
 
-        // Register IAuthenticationService
-        services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ITokenService, TokenService>();
-        services.AddScoped<IOtpService, OtpService>(); // Đăng ký OtpService
 
         // Register AutoMapper
         services.AddAutoMapper(typeof(MapperConfigProfile).Assembly);
@@ -64,7 +61,6 @@ namespace API
     {
         // Add repositories
         services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<IAuthRepository, AuthRepository>();
         services.AddScoped<IBackgroundRepository, BackgroundRepository>();
         services.AddScoped<IMusicRepository, MusicRepository>();
 
@@ -73,12 +69,10 @@ namespace API
         services.AddScoped<IGenericRepository<Music>, GenericRepository<Music>>();
 
         // Add services
-        services.AddScoped<IAuthenticationService, AuthenticationService>();
         services.AddScoped<IBackgroundItemService, BackgroundItemService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IMusicService, MusicService>();
-        services.AddScoped<IOtpService, OtpService>(); 
 
         // Add Token Generators
         services.AddSingleton<TokenGenerators>();

@@ -1,12 +1,14 @@
 ﻿using Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 
 namespace Repository.Interfaces;
 
-public interface IUserRepository 
+public interface IUserRepository
 {
-
-    Task<User> GetUserByEmailAsync(string email);
     Task<User> GetUserByIdAsync(int userId);
-    Task CreateUserAsync(User user);
-    Task UpdateUserAsync(User user);
+    Task<User> GetUserByEmailAsync(string email);
+    Task<IdentityResult> CreateUserAsync(User user);
+    Task UpdateOtpAsync(User user, string otpCode);
+    Task<bool> VerifyOtpAsync(User user, string otpCode);
+    Task UpdateRefreshTokenAsync(User user, string refreshToken);
 }

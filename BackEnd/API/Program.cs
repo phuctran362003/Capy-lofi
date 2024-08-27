@@ -141,8 +141,6 @@ app.UseRouting();
 
 // Enable CORS
 app.UseCors();
-// use Middleware 
-app.UseMiddleware<OAuthStateMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();

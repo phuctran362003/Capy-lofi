@@ -1,17 +1,18 @@
 ﻿using Domain.Entities;
+using Microsoft.AspNet.Identity.EntityFramework;
 using Microsoft.AspNetCore.Identity;
 
 public class User : IdentityUser<int>
 {
     // Additional properties that are not included in IdentityUser
-    public string Name { get; set; }
-    public string DisplayName { get; set; }
-    public string PhotoUrl { get; set; }
-    public int Coins { get; set; }
-    public string ProfileInfo { get; set; }
+    public string? Name { get; set; }
+    public string? DisplayName { get; set; }
+    public string? PhotoUrl { get; set; }
+    public int? Coins { get; set; }
+    public string? ProfileInfo { get; set; }
     
     // The RefreshToken property can be handled differently if needed
-    public string RefreshToken { get; set; }
+    public string? RefreshToken { get; set; }
     
     public string Otp { get; set; }
 
