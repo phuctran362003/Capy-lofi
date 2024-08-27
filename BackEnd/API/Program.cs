@@ -135,6 +135,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "CapyLofi API v1");
+        c.RoutePrefix = string.Empty; 
+
         c.InjectJavascript("/custom-swagger.js");
         c.InjectStylesheet("/custom-swagger.css");
     });
