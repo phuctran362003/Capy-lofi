@@ -1,15 +1,14 @@
 ﻿using Domain.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Repository;
 using Repository.Commons;
 using Repository.Interfaces;
 using Repository.Repositories;
-using Service;
 using Service.Interfaces;
 using Service.Mappers;
 using Service.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using JwtSettings = Repository.Commons.JwtSettings;
 
 namespace API
@@ -27,18 +26,34 @@ namespace API
             services.AddDbContext<CapyLofiDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
+            // Add Identity services
+            services.AddIdentity<User, IdentityRole<int>>() // IdentityRole<int> để sử dụng khóa chính là int
+                .AddEntityFrameworkStores<CapyLofiDbContext>()
+                .AddDefaultTokenProviders();
+
+
+            // Đăng ký EmailService cho Identity
+            services.AddScoped<IEmailSender, EmailService>();
+
+
+            // Add common services
             services.AddScoped<ICurrentTime, CurrentTime>();
             services.AddScoped<IClaimsService, ClaimsService>();
+            services.AddHttpContextAccessor();
+
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IOtpService, OtpService>();
+            services.AddScoped<IAuthenService, AuthenService>();
+
+            // Register AutoMapper
+            services.AddAutoMapper(typeof(MapperConfigProfile).Assembly);
+
+            // Register EmailService
+            services.AddScoped<EmailService>();
 
             // Add UNIT OF WORK
             services.AddProjectUnitOfWork();
-
-            // Register IAuthenticationService
-            services.AddScoped<IAuthenticationService, AuthenticationService>();
-
-            // Others
-            services.AddAutoMapper(typeof(MapperConfigProfile).Assembly);
-            services.AddHttpContextAccessor();
 
             return services;
         }
@@ -47,22 +62,35 @@ namespace API
         {
             // Add repositories
             services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IAuthRepository, AuthRepository>();
             services.AddScoped<IBackgroundRepository, BackgroundRepository>();
             services.AddScoped<IMusicRepository, MusicRepository>();
+            services.AddScoped<IMessageRepository, MessageRepository>();
+            services.AddScoped<IChatRoomRepository, ChatRoomRepository>();
+            services.AddScoped<IChatInvitationRepository, ChatInvitationRepository>();
+
 
             // Add generic repository
-            services.AddScoped<IGenericRepository<User>, GenericRepository<User>>();
             services.AddScoped<IGenericRepository<Background>, GenericRepository<Background>>();
             services.AddScoped<IGenericRepository<Music>, GenericRepository<Music>>();
+            services.AddScoped<IGenericRepository<Message>, GenericRepository<Message>>();
+            services.AddScoped<IGenericRepository<ChatRoom>, GenericRepository<ChatRoom>>();
+            services.AddScoped<IGenericRepository<ChatInvitation>, GenericRepository<ChatInvitation>>();
 
             // Add services
-            services.AddScoped<IAuthenticationService, AuthenticationService>();
             services.AddScoped<IBackgroundItemService, BackgroundItemService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IMusicService, MusicService>();
-            services.AddSingleton<TokenGenerators>();
+            services.AddScoped<IMessageService, MessageService>();
+            services.AddScoped<IChatRoomService, ChatRoomService>();
+            services.AddScoped<IChatInvitationService, ChatInvitationService>();
+
+
+            // Add services
+            services.AddScoped<IBackgroundItemService, BackgroundItemService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IMusicService, MusicService>();
 
             // Add unit of work
             services.AddScoped<IUnitOfWork, UnitOFWork>();
@@ -70,4 +98,5 @@ namespace API
             return services;
         }
     }
+
 }
