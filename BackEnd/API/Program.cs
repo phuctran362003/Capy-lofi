@@ -15,7 +15,6 @@ builder.Services.AddProjectServices(builder.Configuration); // Using the DI clas
 
 // Add services for SignalR
 builder.Services.AddSignalR();
-
 // Add controllers and Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

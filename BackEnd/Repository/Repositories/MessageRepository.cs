@@ -1,6 +1,6 @@
 ﻿using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using Repository.Interfaces;
-using System.Data.Entity;
 
 namespace Repository.Repositories
 {
@@ -15,7 +15,7 @@ namespace Repository.Repositories
             _timeService = timeService;
             _claimsService = claimsService;
         }
-        public async Task<IEnumerable<Message>> GetRecentMessagesByChatRoomIdAsync(int chatRoomId, int count)
+        public async Task<List<Message>> GetRecentMessagesByChatRoomIdAsync(int chatRoomId, int count)
         {
             return await _context.Messages
                 .Where(m => m.ChatRoomId == chatRoomId)

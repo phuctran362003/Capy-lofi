@@ -1,6 +1,6 @@
 ﻿using Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using Repository.Interfaces;
-using System.Data.Entity;
 
 namespace Repository.Repositories
 {
@@ -22,7 +22,7 @@ namespace Repository.Repositories
         public async Task<ChatRoom> GetChatRoomByCountryCodeAsync(string countryCode)
         {
             return await _context.ChatRooms
-                .FirstOrDefaultAsync(cr => cr.CountryCode == countryCode);
+                .FirstOrDefaultAsync(cr => cr.CountryCode.ToLower() == countryCode.ToLower());
         }
 
         public async Task<IEnumerable<ChatRoom>> GetPublicChatRoomsAsync()

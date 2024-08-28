@@ -2,14 +2,17 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 import * as signalR from "@microsoft/signalr";
-import { toast } from 'sonner';
+import axios from 'axios';
+import { format } from 'date-fns';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 
 interface Message {
-    user: string;
-    message: string;
+    chatRoomId: string;
+    userId: string;
+    content: string;
+    createdAt: string;
 }
 
 export default function ChatPage() {
@@ -17,11 +20,14 @@ export default function ChatPage() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [user, setUser] = useState<string>('');
     const [message, setMessage] = useState<string>('');
+    const [email, setEmail] = useState<string>('');
+    const [otp, setOtp] = useState<string>('');
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
     useEffect(() => {
         const conn = new signalR.HubConnectionBuilder()
             .configureLogging(signalR.LogLevel.Debug)
-            .withUrl("http://localhost:5278/chat-hub", {
+            .withUrl("https://localhost:5278/chat-hub", {
                 skipNegotiation: true,
                 transport: signalR.HttpTransportType.WebSockets,
             })
@@ -37,8 +43,24 @@ export default function ChatPage() {
                 toast.error("Error connecting to SignalR");
             });
 
-        conn.on("ReceiveMessage", (user: string, message: string) => {
-            const newMessage = { user, message };
+        conn.on("LoadRecentMessages", (messages) => {
+            console.log("Recent messages received:", messages);
+            try {
+                setMessages(messages);
+            } catch (error) {
+                console.error("Error parsing JSON:", error);
+            }
+        });
+
+        conn.on("ReceiveMessage", (message: any) => {
+            console.log(message);
+
+            const newMessage = {
+                chatRoomId: message?.chatRoomId,
+                userId: message?.userId,
+                content: message?.content,
+                createdAt: new Date().toISOString(),
+             };
             setMessages(messages => [...messages, newMessage]);
             toast.info(`${user}: ${message}`);
         });
@@ -51,9 +73,11 @@ export default function ChatPage() {
     }, []);
 
     const sendMessage = async () => {
+        console.log("Sending message", connection, user, message);
         if (connection && user && message) {
             try {
-                await connection.invoke("SendMessage", user, message);
+                console.log("Sending message", message);
+                await connection.invoke("SendMessage", message);
                 setMessage('');
             } catch (err) {
                 console.error("Error sending message", err);
@@ -62,87 +86,137 @@ export default function ChatPage() {
         }
     };
 
-    const handleGoogleLogin = async () => {
+    const handleRequestOtp = async () => {
         try {
-            const clientId = '1097822686619-u8ekfqo6bb9q4lsqv4kbp99sqaai0ee0.apps.googleusercontent.com';
-            const redirectUri = 'http://localhost:3000/login/callback'; // Thay thế bằng callback của bạn
+            const response = await axios.post('https://localhost:5278/api/v1/auth/otp', {
+                email,
+                name: user || "Anonymous"
+            });
 
-            // them nonce để chống CSRF
-            const scope = 'profile email';
-            const responseType = 'id_token token';
-            const nonce = '123456';
-
-            // Xây dựng URL yêu cầu Google OAuth 2.0
-            const googleLoginUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}&nonce=${nonce}`;
-
-            // Mở trang đăng nhập Google
-            window.location.href = googleLoginUrl;
+            if (response.data.success) {
+                toast.success("OTP sent successfully. Please check your email.");
+            } else {
+                toast.error("Failed to send OTP.");
+            }
         } catch (error) {
-            console.error("Error during Google login", error);
-            toast.error("Error during Google login");
+            console.error("Error requesting OTP", error);
+            toast.error("Error requesting OTP");
+        }
+    };
+
+    const handleVerifyOtp = async () => {
+        try {
+            const response = await axios.post('https://localhost:5278/api/v1/auth/otp/verify', {
+                email,
+                otpCode: otp
+            });
+
+            if (response.data.success) {
+                setIsAuthenticated(true);
+                toast.success("OTP verified successfully.");
+            } else {
+                toast.error("Invalid OTP.");
+            }
+        } catch (error) {
+            console.error("Error verifying OTP", error);
+            toast.error("Error verifying OTP");
         }
     };
 
     return (
-        <div className='p-4 space-y-4'>
-            <h1>ChatPage</h1>
-            <div>
-                <p>Chat with your friends</p>
-                <h2>User Info</h2>
-                <p>Username: John Doe</p>
-                <p>Email: uydev@gmail.com</p>
-                <p>Avatar: 
-                    <img src="https://avatars.githubusercontent.com/u/36305929?v=4" alt="avatar" className='h-10 w-10'/>
-                </p>
-            </div>
-
-            {/* login gg btn */}
-            <Button type="button" onClick={handleGoogleLogin}>Login with Google</Button>
-
-            {/* chat */}
-            <div className='global-chat'>
-                <div className="space-y-2">
-                    <div className="flex items-center space-x-2">
-                        <label htmlFor="userInput" className="w-20">User</label>
+        <div className="p-6 space-y-6">
+            <h1 className="text-3xl font-bold">Chat Page</h1>
+            {!isAuthenticated ? (
+                <div className="space-y-4">
+                    <h2 className="text-xl font-semibold">Login with OTP</h2>
+                    <div className="flex flex-col space-y-4">
                         <Input 
                             type="text" 
-                            id="userInput" 
-                            value={user}
-                            onChange={(e) => setUser(e.target.value)}
-                            className="flex-1"
+                            placeholder="Enter your email" 
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                         />
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <label htmlFor="messageInput" className="w-20">Message</label>
+                        <Button type="button" onClick={handleRequestOtp}>
+                            Request OTP
+                        </Button>
                         <Input 
                             type="text" 
-                            id="messageInput" 
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                            className="flex-1"
+                            placeholder="Enter your OTP" 
+                            value={otp}
+                            onChange={(e) => setOtp(e.target.value)}
                         />
-                    </div>
-                    <div className="text-right">
-                        <Button type="button" id="sendButton" onClick={sendMessage}>
-                            Send
+                        <Button type="button" onClick={handleVerifyOtp}>
+                            Verify OTP
                         </Button>
                     </div>
                 </div>
+            ) : (
+                <>Login rồi</>
+            )}
 
-                <div className="mt-4">
-                    <hr />
+                <div>
+                    <div className="space-y-2">
+                        {
+                            isAuthenticated ? (
+                                <div>
+                                    <h2 className="text-xl font-semibold">Authenticated User</h2>
+                                    <p className="text-lg">User: {user}</p>
+                                </div>
+                            ) : 
+                            <div>
+                                <h2 className="text-xl font-semibold">Unauthenticated User</h2>
+                                <p className="text-lg">User: Anonymous</p>
+                            </div>
+                        }
+                    </div>
+                    <div className="mt-6 space-y-4">
+                        <h2 className="text-xl font-semibold">Global Chat</h2>
+                        <div className="space-y-2">
+                            <div className="flex items-center space-x-2">
+                                <label htmlFor="userInput" className="w-20">User</label>
+                                <Input 
+                                    type="text" 
+                                    id="userInput" 
+                                    value={user}
+                                    onChange={(e) => setUser(e.target.value)}
+                                    className="flex-1"
+                                />
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <label htmlFor="messageInput" className="w-20">Message</label>
+                                <Input 
+                                    type="text" 
+                                    id="messageInput" 
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    className="flex-1"
+                                />
+                            </div>
+                            <div className="text-right">
+                                <Button type="button" id="sendButton" onClick={sendMessage}>
+                                    Send
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="mt-4">
+                            <hr />
+                        </div>
+                        {/* title */}
+                        <h2 className="text-xl font-semibold">Messages</h2>
+                        <div className="mt-4">
+                            <ul id="messagesList" className="space-y-2">
+                                {messages.map((msg, index) => (
+                                    <li key={index} className="border p-2 rounded-md">
+                                        <strong>{msg.userId}</strong>: {msg.content}
+                                        <div className="text-xs text-gray-500">{
+                                            format(new Date(msg.createdAt), 'yyyy-MM-dd HH:mm:ss')
+                                            }</div>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </div>
                 </div>
-
-                <div className="mt-4">
-                    <ul id="messagesList" className="space-y-2">
-                        {messages.map((msg, index) => (
-                            <li key={index} className="border p-2 rounded-md">
-                                <strong>{msg.user}</strong>: {msg.message}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
-            </div>
         </div>
     );
 }

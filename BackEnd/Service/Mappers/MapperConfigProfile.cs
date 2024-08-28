@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Domain.DTOs.BackgroundDTOs;
+using Domain.DTOs.MessageDTOs;
 using Domain.DTOs.MusicsDTOs;
 using Domain.Entities;
 
@@ -22,6 +23,8 @@ namespace Service.Mappers
             CreateMap<Music, CreateMusicDTO>()
                 .ReverseMap();
 
+            CreateMap<Message, MessageDTO>()
+                .ReverseMap();
         }
     }
 }
