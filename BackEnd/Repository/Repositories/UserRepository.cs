@@ -1,7 +1,4 @@
 ﻿using Repository.Interfaces;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 
 namespace Repository
@@ -9,14 +6,14 @@ namespace Repository
 
     public class UserRepository : IUserRepository
     {
-        //Microsoft.AspNetCore.Identity;
         private readonly UserManager<User> _userManager;
+        private readonly RoleManager<IdentityRole<int>> _roleManager;
 
-        public UserRepository(UserManager<User> userManager)
+        public UserRepository(UserManager<User> userManager, RoleManager<IdentityRole<int>> roleManager)
         {
             _userManager = userManager;
+            _roleManager = roleManager;
         }
-
 
         public async Task<User> GetUserByIdAsync(int userId)
         {
@@ -30,18 +27,69 @@ namespace Repository
 
         public async Task<IdentityResult> CreateUserAsync(User user)
         {
-            return await _userManager.CreateAsync(user);
+            // Kiểm tra và tạo vai trò "User" nếu chưa tồn tại
+            if (!await _roleManager.RoleExistsAsync("User"))
+            {
+                var role = new IdentityRole<int> { Name = "User" };
+                var roleResult = await _roleManager.CreateAsync(role);
+                if (!roleResult.Succeeded)
+                {
+                    return IdentityResult.Failed(roleResult.Errors.ToArray());
+                }
+            }
+
+            var createResult = await _userManager.CreateAsync(user);
+
+            if (createResult.Succeeded)
+            {
+                var roleResult = await _userManager.AddToRoleAsync(user, "User");
+
+                if (!roleResult.Succeeded)
+                {
+                    var combinedErrors = createResult.Errors.Concat(roleResult.Errors);
+                    return IdentityResult.Failed(combinedErrors.ToArray());
+                }
+            }
+            return createResult;
         }
 
-        public async Task UpdateOtpAsync(User user, string otpCode)
+        public async Task<IdentityResult> CreateAdminUserAsync(User user)
         {
-            user.Otp = otpCode;
+            // Kiểm tra và tạo vai trò "Admin" nếu chưa tồn tại
+            if (!await _roleManager.RoleExistsAsync("Admin"))
+            {
+                var role = new IdentityRole<int> { Name = "Admin" };
+                var roleResult = await _roleManager.CreateAsync(role);
+                if (!roleResult.Succeeded)
+                {
+                    return IdentityResult.Failed(roleResult.Errors.ToArray());
+                }
+            }
+
+            var createResult = await _userManager.CreateAsync(user);
+
+            if (createResult.Succeeded)
+            {
+                var roleResult = await _userManager.AddToRoleAsync(user, "Admin");
+
+                if (!roleResult.Succeeded)
+                {
+                    var combinedErrors = createResult.Errors.Concat(roleResult.Errors);
+                    return IdentityResult.Failed(combinedErrors.ToArray());
+                }
+            }
+            return createResult;
+        }
+
+        public async Task UpdateOtpAsync(User user, string hashedOtp)
+        {
+            user.Otp = hashedOtp; 
             await _userManager.UpdateAsync(user);
         }
 
-        public async Task<bool> VerifyOtpAsync(User user, string otpCode)
+        public async Task<bool> VerifyOtpAsync(User user, string hashedOtp)
         {
-            return user.Otp == otpCode;
+            return user.Otp == hashedOtp; 
         }
 
         public async Task UpdateRefreshTokenAsync(User user, string refreshToken)
@@ -50,6 +98,7 @@ namespace Repository
             await _userManager.UpdateAsync(user);
         }
     }
+
 
 
 }
