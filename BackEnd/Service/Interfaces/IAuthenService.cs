@@ -1,8 +1,4 @@
-﻿using Domain.DTOs;
-using Domain.DTOs.Response;
-using Domain.Entities;
-using Newtonsoft.Json.Linq;
-using Repository.Commons;
+﻿using Repository.Commons;
 
 namespace Service.Interfaces;
 

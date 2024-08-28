@@ -1,4 +1,5 @@
 ﻿
+using Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 
 namespace Repository;
@@ -8,61 +9,124 @@ public class DbInitializer
     public static async Task InitializeAsync(CapyLofiDbContext context, UserManager<User> userManager, RoleManager<IdentityRole<int>> roleManager)
     {
         context.Database.EnsureCreated();
-        
+
+        // Seed Roles
         if (!await roleManager.RoleExistsAsync("Admin"))
         {
-            var role = new IdentityRole<int> { Name = "Admin" };
-            await roleManager.CreateAsync(role);
+            //Admin
+            var roleAdmin = new IdentityRole<int> { Name = "Admin" };
+            //Customers
+            var roleCustomer = new IdentityRole<int> { Name = "Customer" };
+            //Create Roles
+            await roleManager.CreateAsync(roleAdmin);
+            await roleManager.CreateAsync(roleCustomer);
+
         }
 
-        if (await userManager.FindByNameAsync("goldvalory") == null)
+        // Seed Users
+        await SeedUser(userManager, "goldvalory", "phuctran2003181@gmail.com", "Cubin2003@", "phuc", "goldvalory", 100, "dev manh nhat the gioi", "Admin");
+        await SeedUser(userManager, "uyle123", "admin2@example.com", "Admin2#Password", "uy", "Admin2", 100, "Admin 2 profile", "Admin");
+
+        // Seed Chat Data
+        await SeedChatData(context);
+    }
+
+    private static async Task SeedUser(UserManager<User> userManager, string username, string email, string password, string name, string displayName, int coins, string profileInfo, string role)
+    {
+        if (await userManager.FindByNameAsync(username) == null)
         {
-            var admin1 = new User
+            var user = new User
             {
-                UserName = "goldvalory",
-                Email = "phuctran2003181@gmail.com",
-                Name = "phuc",
-                DisplayName = "goldvalory",
-                Coins = 100,
-                ProfileInfo = "dev manh nhat the gioi",
+                UserName = username,
+                Email = email,
+                Name = name,
+                DisplayName = displayName,
+                Coins = coins,
+                ProfileInfo = profileInfo,
                 EmailConfirmed = true,
                 SecurityStamp = Guid.NewGuid().ToString()
             };
 
-            var result1 = await userManager.CreateAsync(admin1, "Cubin2003@");
-            if (result1.Succeeded)
+            var result = await userManager.CreateAsync(user, password);
+            if (result.Succeeded)
             {
-                await userManager.AddToRoleAsync(admin1, "Admin");
+                await userManager.AddToRoleAsync(user, role);
             }
             else
             {
-                throw new Exception("Failed to create admin1: " + string.Join(", ", result1.Errors.Select(e => e.Description)));
+                throw new Exception($"Failed to create user {username}: " + string.Join(", ", result.Errors.Select(e => e.Description)));
             }
         }
+    }
 
-        if (await userManager.FindByNameAsync("uyle123") == null)
+    public static async Task SeedChatData(CapyLofiDbContext context)
+    {
+        // Seed Chat Rooms
+        if (!context.ChatRooms.Any(cr => cr.Name == "Global"))
         {
-            var admin2 = new User
+            var chatRoom1 = new ChatRoom
             {
-                UserName = "uyle123",
-                Email = "admin2@example.com",
-                Name = "uy",
-                DisplayName = "Admin2",
-                Coins = 100,
-                ProfileInfo = "Admin 2 profile",
-                EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString()
+                Name = "Global",
+                CountryCode = "GLOBAL",
+                IsGlobal = true,
+                IsPrivate = false,
+                CreatedAt = DateTime.Now
             };
 
-            var result2 = await userManager.CreateAsync(admin2, "Admin2#Password");
-            if (result2.Succeeded)
+            var chatRoom2 = new ChatRoom
             {
-                await userManager.AddToRoleAsync(admin2, "Admin");
-            }
-            else
+                Name = "Vietnam",
+                CountryCode = "VN",
+                IsGlobal = false,
+                IsPrivate = false,
+                CreatedAt = DateTime.Now
+            };
+
+            context.ChatRooms.Add(chatRoom1);
+            context.ChatRooms.Add(chatRoom2);
+            await context.SaveChangesAsync();
+        }
+
+        // Seed another chat room
+        if (!context.ChatRooms.Any(cr => cr.Name == "Private Room"))
+        {
+            var privateChatRoom = new ChatRoom
             {
-                throw new Exception("Failed to create admin2: " + string.Join(", ", result2.Errors.Select(e => e.Description)));
-            }
+                Name = "Private Room",
+                IsGlobal = false,
+                IsPrivate = true,
+                PrivateCode = "Private123",
+                CreatedAt = DateTime.Now
+            };
+
+            context.ChatRooms.Add(privateChatRoom);
+            await context.SaveChangesAsync();
+        }
+
+        // Seed Messages for Global Chat Room
+        var globalChatRoom = context.ChatRooms.FirstOrDefault(cr => cr.Name == "Global");
+        if (globalChatRoom != null && !context.Messages.Any(m => m.ChatRoomId == globalChatRoom.Id))
+        {
+            var messages = new List<Message>
+            {
+                new Message
+                {
+                    ChatRoomId = globalChatRoom.Id,
+                    User = context.Users.FirstOrDefault(u => u.UserName == "goldvalory"),
+                    Content = "Welcome to the Global Chat!",
+                    CreatedAt = DateTime.Now
+                },
+                new Message
+                {
+                    ChatRoomId = globalChatRoom.Id,
+                    User = context.Users.FirstOrDefault(u => u.UserName == "uyle123"),
+                    Content = "Hello everyone!",
+                    CreatedAt = DateTime.Now
+                }
+            };
+
+            context.Messages.AddRange(messages);
+            await context.SaveChangesAsync();
         }
     }
 }

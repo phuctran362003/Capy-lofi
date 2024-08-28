@@ -1,14 +1,12 @@
 using API;
-using Microsoft.OpenApi.Models;
-using Service.Hubs;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using API.Middleware;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using Repository;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -118,7 +116,7 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole<int>>>();
 
         // Đợi cho đến khi phương thức khởi tạo kết thúc
-        await DbInitializer.InitializeAsync(context,userManager, roleManager);
+        await DbInitializer.InitializeAsync(context, userManager, roleManager);
     }
     catch (Exception ex)
     {
@@ -135,7 +133,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "CapyLofi API v1");
-        c.RoutePrefix = string.Empty; 
+        c.RoutePrefix = string.Empty;
 
         c.InjectJavascript("/custom-swagger.js");
         c.InjectStylesheet("/custom-swagger.css");
