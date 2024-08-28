@@ -8,6 +8,6 @@ namespace Service.Interfaces;
 
 public interface IAuthenService
 {
-    Task<ApiResult<string>> SendOtpAsync(string email);
-    Task<ApiResult<Tokens>> VerifyOtpAsync(string email, string otpCode);
+    Task<ApiResult<User>> VerifyOtpAsync(string email, string otpCode);
+    Task<ApiResult<bool>> UpdateRefreshTokenAsync(User user, string refreshToken);
 }

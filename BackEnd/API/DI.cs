@@ -45,6 +45,7 @@ namespace API
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IOtpService, OtpService>();
+            services.AddScoped<IAuthenService, AuthenService>();
 
             // Register AutoMapper
             services.AddAutoMapper(typeof(MapperConfigProfile).Assembly);
@@ -75,8 +76,6 @@ namespace API
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IMusicService, MusicService>();
 
-            // Add Token Generators
-            services.AddSingleton<TokenGenerators>();
 
             // Add unit of work
             services.AddScoped<IUnitOfWork, UnitOFWork>();

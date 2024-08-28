@@ -13,11 +13,13 @@ public class AuthController : Controller
 {
     private readonly IUserService _userService;
     private readonly ITokenService _tokenService;
+    private readonly IAuthenService _authenService;
 
-    public AuthController(IUserService userService, ITokenService tokenService)
+    public AuthController(IUserService userService, ITokenService tokenService, IAuthenService authenService)
     {
         _userService = userService;
         _tokenService = tokenService;
+        _authenService = authenService;
     }
 
     [HttpPost("otp")]
@@ -63,13 +65,13 @@ public class AuthController : Controller
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest("Invalid request.");
+                return BadRequest(ApiResult<string>.Error(null, "Invalid request."));
             }
 
-            var result = await _userService.VerifyOtpAsync(request.Email, request.OtpCode);
+            var result = await _authenService.VerifyOtpAsync(request.Email, request.OtpCode);
             if (!result.Success)
             {
-                return Unauthorized(result.Message);
+                return Unauthorized(ApiResult<string>.Error(null, result.Message));
             }
 
             var user = result.Data;
@@ -78,23 +80,24 @@ public class AuthController : Controller
             var tokens = _tokenService.GenerateTokens(user);
 
             // Update the refresh token in the database
-            await _userService.UpdateRefreshTokenAsync(user, tokens.RefreshToken);
+            await _authenService.UpdateRefreshTokenAsync(user, tokens.RefreshToken);
 
             // Set JWT cookie
             Response.Cookies.Append("jwt", tokens.AccessToken, new CookieOptions { HttpOnly = true, Secure = true });
 
-            return Ok(new
+            var successResult = ApiResult<object>.Succeed(new
             {
-                message = "OTP verified successfully.",
                 accessToken = tokens.AccessToken,
                 refreshToken = tokens.RefreshToken
-            });
+            }, "OTP verified successfully.");
+
+            return Ok(successResult);
         }
         catch (Exception ex)
         {
             // Log the exception details here if necessary
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                $"An error occurred while verifying OTP: {ex.Message}");
+            var errorResult = ApiResult<string>.Fail(ex);
+            return StatusCode(StatusCodes.Status500InternalServerError, errorResult);
         }
     }
 }

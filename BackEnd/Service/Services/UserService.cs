@@ -21,6 +21,12 @@ public class UserService : IUserService
     {
         try
         {
+            // Validate userId
+            if (userId <= 0)
+            {
+                return ApiResult<User>.Error(null, "Invalid user ID.");
+            }
+
             var user = await _userRepository.GetUserByIdAsync(userId);
             if (user == null)
             {
@@ -38,6 +44,12 @@ public class UserService : IUserService
     {
         try
         {
+            // Validate email
+            if (string.IsNullOrWhiteSpace(email) || !IsValidEmail(email))
+            {
+                return ApiResult<UserDto>.Error(null, "Invalid email.");
+            }
+
             var otpCode = _otpService.GenerateOtp();
             var user = await _userRepository.GetUserByEmailAsync(email);
 
@@ -81,36 +93,18 @@ public class UserService : IUserService
             return ApiResult<UserDto>.Fail(ex);
         }
     }
-
-    public async Task<ApiResult<User>> VerifyOtpAsync(string email, string otpCode)
+    private bool IsValidEmail(string email)
     {
         try
         {
-            var user = await _userRepository.GetUserByEmailAsync(email);
-
-            if (user == null || !await _otpService.ValidateOtpAsync(user, otpCode))
-            {
-                return ApiResult<User>.Error(null, "Invalid OTP.");
-            }
-
-            return ApiResult<User>.Succeed(user, "OTP verified successfully.");
+            var mailAddress = new System.Net.Mail.MailAddress(email);
+            return mailAddress.Address == email;
         }
-        catch (Exception ex)
+        catch
         {
-            return ApiResult<User>.Fail(ex);
+            return false;
         }
     }
 
-    public async Task<ApiResult<bool>> UpdateRefreshTokenAsync(User user, string refreshToken)
-    {
-        try
-        {
-            await _userRepository.UpdateRefreshTokenAsync(user, refreshToken);
-            return ApiResult<bool>.Succeed(true, "Refresh token updated successfully.");
-        }
-        catch (Exception ex)
-        {
-            return ApiResult<bool>.Fail(ex);
-        }
-    }
 }
+
