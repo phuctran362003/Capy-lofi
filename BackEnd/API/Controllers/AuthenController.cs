@@ -71,7 +71,14 @@ public class AuthController : Controller
             var result = await _authenService.VerifyOtpAsync(request.Email, request.OtpCode);
             if (!result.Success)
             {
-                return Unauthorized(ApiResult<string>.Error(null, result.Message));
+                if (result.Message == "OTP has expired")
+                {
+                    return BadRequest(ApiResult<string>.Error(null, result.Message));  // Handles expired OTP
+                }
+                else
+                {
+                    return Unauthorized(ApiResult<string>.Error(null, result.Message));  // Handles other errors
+                }
             }
 
             var user = result.Data;
@@ -100,6 +107,8 @@ public class AuthController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError, errorResult);
         }
     }
+
+
 }
 
 

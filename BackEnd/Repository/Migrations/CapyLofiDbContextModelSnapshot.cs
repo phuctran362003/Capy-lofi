@@ -698,6 +698,9 @@ namespace Repository.Migrations
                     b.Property<string>("Otp")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("OtpExpiryTime")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
 
