@@ -13,48 +13,50 @@ using JwtSettings = Repository.Commons.JwtSettings;
 
 namespace API
 {
-   public static class DI
-{
-    public static IServiceCollection AddProjectServices(this IServiceCollection services, IConfiguration configuration)
+    public static class DI
     {
-        // Bind JwtSettings
-        var jwtSettings = new JwtSettings();
-        configuration.GetSection("JwtSettings").Bind(jwtSettings);
-        services.AddSingleton(jwtSettings);
+        public static IServiceCollection AddProjectServices(this IServiceCollection services, IConfiguration configuration)
+        {
+            // Bind JwtSettings
+            var jwtSettings = new JwtSettings();
+            configuration.GetSection("JwtSettings").Bind(jwtSettings);
+            services.AddSingleton(jwtSettings);
 
-        // Add ApplicationDbContext with SQL Server
-        services.AddDbContext<CapyLofiDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+            // Add ApplicationDbContext with SQL Server
+            services.AddDbContext<CapyLofiDbContext>(options =>
+                options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
-        // Add Identity services
-        services.AddIdentity<User, IdentityRole<int>>() // IdentityRole<int> để sử dụng khóa chính là int
-            .AddEntityFrameworkStores<CapyLofiDbContext>()
-            .AddDefaultTokenProviders();
-        
-        
-        // Đăng ký EmailService cho Identity
-        services.AddScoped<IEmailSender, EmailService>();
+            // Add Identity services
+            services.AddIdentity<User, IdentityRole<int>>() // IdentityRole<int> để sử dụng khóa chính là int
+                .AddEntityFrameworkStores<CapyLofiDbContext>()
+                .AddDefaultTokenProviders();
 
 
-        // Add common services
-        services.AddScoped<ICurrentTime, CurrentTime>();
-        services.AddScoped<IClaimsService, ClaimsService>();
-        services.AddHttpContextAccessor();
+            // Đăng ký EmailService cho Identity
+            services.AddScoped<IEmailSender, EmailService>();
 
-        services.AddScoped<IUserService, UserService>();
-        services.AddScoped<ITokenService, TokenService>();
 
-        // Register AutoMapper
-        services.AddAutoMapper(typeof(MapperConfigProfile).Assembly);
+            // Add common services
+            services.AddScoped<ICurrentTime, CurrentTime>();
+            services.AddScoped<IClaimsService, ClaimsService>();
+            services.AddHttpContextAccessor();
 
-        // Register EmailService
-        services.AddScoped<EmailService>(); // Thêm dòng này để đăng ký EmailService
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IOtpService, OtpService>();
+            services.AddScoped<IAuthenService, AuthenService>();
 
-        // Add UNIT OF WORK
-        services.AddProjectUnitOfWork();
+            // Register AutoMapper
+            services.AddAutoMapper(typeof(MapperConfigProfile).Assembly);
 
-        return services;
-    }
+            // Register EmailService
+            services.AddScoped<EmailService>();
+
+            // Add UNIT OF WORK
+            services.AddProjectUnitOfWork();
+
+            return services;
+        }
 
         public static IServiceCollection AddProjectUnitOfWork(this IServiceCollection services)
         {
@@ -65,6 +67,7 @@ namespace API
             services.AddScoped<IMessageRepository, MessageRepository>();
             services.AddScoped<IChatRoomRepository, ChatRoomRepository>();
             services.AddScoped<IChatInvitationRepository, ChatInvitationRepository>();
+
 
             // Add generic repository
             services.AddScoped<IGenericRepository<Background>, GenericRepository<Background>>();
@@ -82,11 +85,18 @@ namespace API
             services.AddScoped<IChatRoomService, ChatRoomService>();
             services.AddScoped<IChatInvitationService, ChatInvitationService>();
 
-        // Add unit of work
-        services.AddScoped<IUnitOfWork, UnitOFWork>();
 
-        return services;
+            // Add services
+            services.AddScoped<IBackgroundItemService, BackgroundItemService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IMusicService, MusicService>();
+
+            // Add unit of work
+            services.AddScoped<IUnitOfWork, UnitOFWork>();
+
+            return services;
+        }
     }
-}
 
 }
