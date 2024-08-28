@@ -1,15 +1,18 @@
 ﻿using Domain.Entities;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace Repository;
 
-public class CapyLofiDbContext : DbContext
+
+
+public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
 {
     public CapyLofiDbContext(DbContextOptions<CapyLofiDbContext> options) : base(options)
     {
     }
-    public DbSet<User> Users { get; set; }
-    public DbSet<Admin> Admins { get; set; }
+
     public DbSet<LearningSession> LearningSessions { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<Music> Musics { get; set; }
@@ -18,11 +21,18 @@ public class CapyLofiDbContext : DbContext
     public DbSet<UserBackground> UserBackgrounds { get; set; }
     public DbSet<Feedback> Feedbacks { get; set; }
 
+    //Chatroom
+    public DbSet<ChatRoom> ChatRooms { get; set; }
+    public DbSet<Message> Messages { get; set; }
+    public DbSet<UserChatRoom> UserChatRooms { get; set; }
+    public DbSet<ChatInvitation> ChatInvitations { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        ConfigureBaseEntityProperties(modelBuilder);
+        // Gọi base để đảm bảo cấu hình các bảng liên quan đến Identity
+        base.OnModelCreating(modelBuilder);
 
-        // Users
+        // Cấu hình tùy chỉnh cho User
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -33,16 +43,7 @@ public class CapyLofiDbContext : DbContext
             entity.Property(e => e.PhotoUrl).HasMaxLength(255);
         });
 
-        // Admins
-        modelBuilder.Entity<Admin>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Email).IsRequired().HasMaxLength(255);
-            entity.HasIndex(e => e.Email).IsUnique();
-            entity.Property(e => e.Password).IsRequired().HasMaxLength(255);
-        });
-
-        // LearningSessions
+        // Cấu hình các thực thể khác như LearningSessions, Orders, Musics, Backgrounds, UserMusic, UserBackgrounds, Feedbacks
         modelBuilder.Entity<LearningSession>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -53,7 +54,6 @@ public class CapyLofiDbContext : DbContext
                 .HasForeignKey(e => e.UserId);
         });
 
-        // Orders
         modelBuilder.Entity<Order>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -64,7 +64,6 @@ public class CapyLofiDbContext : DbContext
                 .HasForeignKey(e => e.UserId);
         });
 
-        // Music
         modelBuilder.Entity<Music>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -72,7 +71,6 @@ public class CapyLofiDbContext : DbContext
             entity.Property(e => e.MusicUrl).IsRequired().HasMaxLength(255);
         });
 
-        // Backgrounds
         modelBuilder.Entity<Background>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -80,7 +78,6 @@ public class CapyLofiDbContext : DbContext
             entity.Property(e => e.BackgroundUrl).IsRequired().HasMaxLength(255);
         });
 
-        // UserMusic
         modelBuilder.Entity<UserMusic>(entity =>
         {
             entity.HasKey(e => new { e.UserId, e.MusicId });
@@ -92,7 +89,6 @@ public class CapyLofiDbContext : DbContext
                 .HasForeignKey(e => e.MusicId);
         });
 
-        // UserBackgrounds
         modelBuilder.Entity<UserBackground>(entity =>
         {
             entity.HasKey(e => new { e.UserId, e.BackgroundId });
@@ -104,7 +100,6 @@ public class CapyLofiDbContext : DbContext
                 .HasForeignKey(e => e.BackgroundId);
         });
 
-        // Feedback
         modelBuilder.Entity<Feedback>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -114,16 +109,51 @@ public class CapyLofiDbContext : DbContext
                 .WithMany(u => u.Feedbacks)
                 .HasForeignKey(e => e.UserId);
         });
+
+        // Fluent API configuration for UserChatRoom composite key
+        modelBuilder.Entity<UserChatRoom>()
+            .HasKey(uc => new { uc.UserId, uc.ChatRoomId });
+
+        modelBuilder.Entity<UserChatRoom>()
+            .HasOne(uc => uc.User)
+            .WithMany(u => u.UserChatRooms)
+            .HasForeignKey(uc => uc.UserId);
+
+        modelBuilder.Entity<UserChatRoom>()
+            .HasOne(uc => uc.ChatRoom)
+            .WithMany(cr => cr.UserChatRooms)
+            .HasForeignKey(uc => uc.ChatRoomId);
+
+        // Configure relationships for Message entity
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.ChatRoom)
+            .WithMany(cr => cr.Messages)
+            .HasForeignKey(m => m.ChatRoomId);
+
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.User)
+            .WithMany(u => u.Messages)
+            .HasForeignKey(m => m.UserId);
+
+        // Configure relationships for ChatInvitation entity
+        modelBuilder.Entity<ChatInvitation>()
+            .HasOne(ci => ci.ChatRoom)
+            .WithMany(cr => cr.ChatInvitations)
+            .HasForeignKey(ci => ci.ChatRoomId);
+
+        modelBuilder.Entity<ChatInvitation>()
+            .HasOne(ci => ci.User)
+            .WithMany()
+            .HasForeignKey(ci => ci.UserId);
+
+        // Cấu hình các thuộc tính cơ bản của thực thể
+        ConfigureBaseEntityProperties(modelBuilder);
     }
 
     private void ConfigureBaseEntityProperties(ModelBuilder modelBuilder)
     {
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
         {
-            
-            
-            
-            
             if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
             {
                 modelBuilder.Entity(entityType.ClrType).Property<DateTime>("CreatedAt");
@@ -137,4 +167,6 @@ public class CapyLofiDbContext : DbContext
         }
     }
 }
+
+
 

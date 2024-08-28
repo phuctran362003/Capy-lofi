@@ -63,6 +63,7 @@
     "react-dom": "18.2.0",
     "react-hook-form": "^7.52.1",
     "react-resizable-panels": "^2.0.22",
+    "react-toastify": "^10.0.5",
     "recharts": "^2.12.7",
     "server-only": "^0.0.1",
     "sonner": "^1.5.0",

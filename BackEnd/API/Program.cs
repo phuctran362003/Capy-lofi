@@ -1,13 +1,12 @@
 using API;
-using Microsoft.OpenApi.Models;
-using Service.Hubs;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using API.Middleware;
+using Microsoft.OpenApi.Models;
 using Repository;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,7 +15,6 @@ builder.Services.AddProjectServices(builder.Configuration); // Using the DI clas
 
 // Add services for SignalR
 builder.Services.AddSignalR();
-
 // Add controllers and Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -113,7 +111,11 @@ using (var scope = app.Services.CreateScope())
     try
     {
         var context = services.GetRequiredService<CapyLofiDbContext>();
-        DbInitializer.Initialize(context);
+        var userManager = services.GetRequiredService<UserManager<User>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole<int>>>();
+
+        // Đợi cho đến khi phương thức khởi tạo kết thúc
+        await DbInitializer.InitializeAsync(context, userManager, roleManager);
     }
     catch (Exception ex)
     {
@@ -122,14 +124,16 @@ using (var scope = app.Services.CreateScope())
         logger.LogError(ex, "An error occurred while seeding the database.");
     }
 }
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "CapyLofi API v1");
+        c.RoutePrefix = string.Empty;
+
         c.InjectJavascript("/custom-swagger.js");
         c.InjectStylesheet("/custom-swagger.css");
     });
@@ -141,8 +145,6 @@ app.UseRouting();
 
 // Enable CORS
 app.UseCors();
-// use Middleware 
-app.UseMiddleware<OAuthStateMiddleware>();
 
 app.UseAuthentication();
 app.UseAuthorization();
