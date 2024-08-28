@@ -1,7 +1,7 @@
 ﻿using Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
 
 namespace Repository;
 
@@ -20,6 +20,12 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
     public DbSet<UserMusic> UserMusics { get; set; }
     public DbSet<UserBackground> UserBackgrounds { get; set; }
     public DbSet<Feedback> Feedbacks { get; set; }
+
+    //Chatroom
+    public DbSet<ChatRoom> ChatRooms { get; set; }
+    public DbSet<Message> Messages { get; set; }
+    public DbSet<UserChatRoom> UserChatRooms { get; set; }
+    public DbSet<ChatInvitation> ChatInvitations { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -103,6 +109,42 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
                 .WithMany(u => u.Feedbacks)
                 .HasForeignKey(e => e.UserId);
         });
+
+        // Fluent API configuration for UserChatRoom composite key
+        modelBuilder.Entity<UserChatRoom>()
+            .HasKey(uc => new { uc.UserId, uc.ChatRoomId });
+
+        modelBuilder.Entity<UserChatRoom>()
+            .HasOne(uc => uc.User)
+            .WithMany(u => u.UserChatRooms)
+            .HasForeignKey(uc => uc.UserId);
+
+        modelBuilder.Entity<UserChatRoom>()
+            .HasOne(uc => uc.ChatRoom)
+            .WithMany(cr => cr.UserChatRooms)
+            .HasForeignKey(uc => uc.ChatRoomId);
+
+        // Configure relationships for Message entity
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.ChatRoom)
+            .WithMany(cr => cr.Messages)
+            .HasForeignKey(m => m.ChatRoomId);
+
+        modelBuilder.Entity<Message>()
+            .HasOne(m => m.User)
+            .WithMany(u => u.Messages)
+            .HasForeignKey(m => m.UserId);
+
+        // Configure relationships for ChatInvitation entity
+        modelBuilder.Entity<ChatInvitation>()
+            .HasOne(ci => ci.ChatRoom)
+            .WithMany(cr => cr.ChatInvitations)
+            .HasForeignKey(ci => ci.ChatRoomId);
+
+        modelBuilder.Entity<ChatInvitation>()
+            .HasOne(ci => ci.User)
+            .WithMany()
+            .HasForeignKey(ci => ci.UserId);
 
         // Cấu hình các thuộc tính cơ bản của thực thể
         ConfigureBaseEntityProperties(modelBuilder);

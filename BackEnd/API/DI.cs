@@ -6,7 +6,6 @@ using Repository;
 using Repository.Commons;
 using Repository.Interfaces;
 using Repository.Repositories;
-using Service;
 using Service.Interfaces;
 using Service.Mappers;
 using Service.Services;
@@ -65,17 +64,33 @@ namespace API
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IBackgroundRepository, BackgroundRepository>();
             services.AddScoped<IMusicRepository, MusicRepository>();
+            services.AddScoped<IMessageRepository, MessageRepository>();
+            services.AddScoped<IChatRoomRepository, ChatRoomRepository>();
+            services.AddScoped<IChatInvitationRepository, ChatInvitationRepository>();
+
 
             // Add generic repository
             services.AddScoped<IGenericRepository<Background>, GenericRepository<Background>>();
             services.AddScoped<IGenericRepository<Music>, GenericRepository<Music>>();
+            services.AddScoped<IGenericRepository<Message>, GenericRepository<Message>>();
+            services.AddScoped<IGenericRepository<ChatRoom>, GenericRepository<ChatRoom>>();
+            services.AddScoped<IGenericRepository<ChatInvitation>, GenericRepository<ChatInvitation>>();
 
             // Add services
             services.AddScoped<IBackgroundItemService, BackgroundItemService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddScoped<IMusicService, MusicService>();
+            services.AddScoped<IMessageService, MessageService>();
+            services.AddScoped<IChatRoomService, ChatRoomService>();
+            services.AddScoped<IChatInvitationService, ChatInvitationService>();
 
+
+            // Add services
+            services.AddScoped<IBackgroundItemService, BackgroundItemService>();
+            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IMusicService, MusicService>();
 
             // Add unit of work
             services.AddScoped<IUnitOfWork, UnitOFWork>();
