@@ -14,7 +14,7 @@ public class User : IdentityUser<int>
     public string? RefreshToken { get; set; }
     public string? Otp { get; set; }
     public string? OtpExpiryTime { get; set; }
-    
+
     public string? CountryCode { get; set; }
 
     // Navigation properties for related entities

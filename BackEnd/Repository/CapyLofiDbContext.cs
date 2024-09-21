@@ -43,6 +43,7 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
             entity.Property(e => e.PhotoUrl).HasMaxLength(255);
         });
 
+        modelBuilder.HasDefaultSchema("identity");
         // Cấu hình các thực thể khác như LearningSessions, Orders, Musics, Backgrounds, UserMusic, UserBackgrounds, Feedbacks
         modelBuilder.Entity<LearningSession>(entity =>
         {
