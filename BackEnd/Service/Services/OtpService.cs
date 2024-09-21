@@ -1,9 +1,9 @@
-﻿using System.Security.Cryptography;
-using Microsoft.Extensions.Logging;
-using System.Globalization;
+﻿using Microsoft.Extensions.Logging;
 using Repository.Commons;
 using Repository.Interfaces;
 using Service.Interfaces;
+using System.Globalization;
+using System.Security.Cryptography;
 
 public class OtpService : IOtpService
 {
@@ -22,10 +22,10 @@ public class OtpService : IOtpService
         _logger.LogInformation("Generating a new secure OTP.");
         using (var rng = new RNGCryptoServiceProvider())
         {
-            var randomBytes = new byte[4]; 
+            var randomBytes = new byte[4];
             rng.GetBytes(randomBytes);
             var randomValue = BitConverter.ToUInt32(randomBytes, 0) % 1000000;
-            return randomValue.ToString("D6"); 
+            return randomValue.ToString("D6");
         }
     }
 
@@ -34,35 +34,23 @@ public class OtpService : IOtpService
     {
         if (user == null)
         {
-            _logger.LogWarning("SaveOtpAsync called with null user.");
             return ApiResult<bool>.Error(false, "User is null");
-        }
-
-        if (string.IsNullOrEmpty(otp) || otp.Length != 6 || !otp.All(char.IsDigit))
-        {
-            _logger.LogWarning("Invalid OTP format for user {UserId}. OTP: {Otp}", user.Id, otp);
-            return ApiResult<bool>.Error(false, "Invalid OTP format");
         }
 
         try
         {
-            _logger.LogInformation("Saving OTP for user {UserId}.", user.Id);
-
-            // Thiết lập thời gian hết hạn OTP là 3 phút từ bây giờ
-            user.OtpExpiryTime = DateTime.UtcNow.AddMinutes(3).ToString("o", CultureInfo.InvariantCulture);
             user.Otp = otp;
+            user.OtpExpiryTime = DateTime.UtcNow.AddMinutes(3).ToString("o");
 
-            await _userRepository.UpdateOtpAsync(user, otp);
-            _logger.LogInformation("OTP saved successfully for user {UserId}.", user.Id);
-
+            await _userRepository.UpdateOtpAsync(user, otp); // Ensure this repository method works correctly
             return ApiResult<bool>.Succeed(true, "OTP saved successfully");
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "An error occurred while saving OTP for user {UserId}.", user.Id);
             return ApiResult<bool>.Fail(ex);
         }
     }
+
 
     // Xác thực OTP và kiểm tra thời gian hết hạn
     // ValidateOtpAsync Method

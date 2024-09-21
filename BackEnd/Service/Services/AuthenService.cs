@@ -1,11 +1,6 @@
 ﻿using Repository.Commons;
 using Repository.Interfaces;
 using Service.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Service.Services
 {
@@ -33,11 +28,11 @@ namespace Service.Services
                     return ApiResult<User>.Error(null, "OTP code cannot be empty.");
                 }
 
-                var user = await _userRepository.GetUserByEmailAsync(email);
+                var user = await _userRepository.GetUserByEmailAsync(email); // This is probably null
 
                 if (user == null)
                 {
-                    return ApiResult<User>.Error(null, "User not found.");
+                    return ApiResult<User>.Error(null, "User not found.");  // Add this check to handle null user
                 }
 
                 var otpValidationResult = await _otpService.ValidateOtpAsync(user, otpCode);
@@ -53,6 +48,7 @@ namespace Service.Services
                 return ApiResult<User>.Fail(ex);
             }
         }
+
 
         public async Task<ApiResult<bool>> UpdateRefreshTokenAsync(User user, string refreshToken)
         {

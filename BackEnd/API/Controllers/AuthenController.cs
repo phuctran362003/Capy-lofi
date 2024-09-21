@@ -12,12 +12,14 @@ public class AuthController : Controller
     private readonly IUserService _userService;
     private readonly ITokenService _tokenService;
     private readonly IAuthenService _authenService;
+    private readonly IConfiguration _configuration;
 
-    public AuthController(IUserService userService, ITokenService tokenService, IAuthenService authenService)
+    public AuthController(IUserService userService, ITokenService tokenService, IAuthenService authenService, IConfiguration configuration)
     {
         _userService = userService;
         _tokenService = tokenService;
         _authenService = authenService;
+        _configuration = configuration;
     }
 
     [HttpPost("otp")]
@@ -90,10 +92,16 @@ public class AuthController : Controller
             // Set JWT cookie
             Response.Cookies.Append("jwt", tokens.AccessToken, new CookieOptions { HttpOnly = true, Secure = true });
 
+            // Retrieve expiration times from the configuration
+            var accessTokenExpirationMinutes = _configuration["JwtSettings:AccessTokenExpirationMinutes"];
+            var refreshTokenExpirationMinutes = _configuration["JwtSettings:RefreshTokenExpirationMinutes"];
+
             var successResult = ApiResult<object>.Succeed(new
             {
                 accessToken = tokens.AccessToken,
-                refreshToken = tokens.RefreshToken
+                refreshToken = tokens.RefreshToken,
+                accessTokenExpiration = accessTokenExpirationMinutes,    // Add expiration info to the response
+                refreshTokenExpiration = refreshTokenExpirationMinutes   // Add expiration info to the response
             }, "OTP verified successfully.");
 
             return Ok(successResult);
@@ -105,6 +113,7 @@ public class AuthController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError, errorResult);
         }
     }
+
 
 
 }
