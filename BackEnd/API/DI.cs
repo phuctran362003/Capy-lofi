@@ -27,14 +27,15 @@ namespace API
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
             // Add Identity services
-            services.AddIdentity<User, IdentityRole<int>>() // IdentityRole<int> để sử dụng khóa chính là int
+            services.AddIdentity<User, IdentityRole<int>>() // IdentityRole<int> to use int as primary key
                 .AddEntityFrameworkStores<CapyLofiDbContext>()
                 .AddDefaultTokenProviders();
 
+            // Register IPasswordHasher<User>
+            services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
-            // Đăng ký EmailService cho Identity
+            // Register EmailService for Identity
             services.AddScoped<IEmailSender, EmailService>();
-
 
             // Add common services
             services.AddScoped<ICurrentTime, CurrentTime>();
@@ -68,7 +69,6 @@ namespace API
             services.AddScoped<IChatRoomRepository, ChatRoomRepository>();
             services.AddScoped<IChatInvitationRepository, ChatInvitationRepository>();
 
-
             // Add generic repository
             services.AddScoped<IGenericRepository<Background>, GenericRepository<Background>>();
             services.AddScoped<IGenericRepository<Music>, GenericRepository<Music>>();
@@ -85,18 +85,12 @@ namespace API
             services.AddScoped<IChatRoomService, ChatRoomService>();
             services.AddScoped<IChatInvitationService, ChatInvitationService>();
 
-
-            // Add services
-            services.AddScoped<IBackgroundItemService, BackgroundItemService>();
-            services.AddScoped<IUserService, UserService>();
-            services.AddScoped<ITokenService, TokenService>();
-            services.AddScoped<IMusicService, MusicService>();
-
             // Add unit of work
             services.AddScoped<IUnitOfWork, UnitOFWork>();
 
             return services;
         }
     }
+
 
 }

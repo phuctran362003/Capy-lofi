@@ -17,7 +17,6 @@ public class UserController : Controller
         _userService = userService;
     }
 
-    // Endpoint to get logged-in user's information
     [HttpGet("me")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -26,7 +25,6 @@ public class UserController : Controller
     {
         try
         {
-            // Ensure the user is authenticated
             if (!User.Identity.IsAuthenticated)
             {
                 return Unauthorized(new ApiResult<string>
@@ -37,7 +35,6 @@ public class UserController : Controller
                 });
             }
 
-            // Get the user's ID from the ClaimsPrincipal
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
             {
@@ -51,7 +48,6 @@ public class UserController : Controller
 
             var userId = int.Parse(userIdClaim.Value);
 
-            // Fetch the user information from the service
             var userResult = await _userService.GetUserByIdAsync(userId);
             if (!userResult.Success || userResult.Data == null)
             {
@@ -63,7 +59,6 @@ public class UserController : Controller
                 });
             }
 
-            // Return a DTO with limited fields (modify based on your actual DTO)
             var userDto = new UserDto
             {
 
@@ -72,7 +67,7 @@ public class UserController : Controller
                 DisplayName = userResult.Data.DisplayName,
                 Email = userResult.Data.Email,
                 ProfileInfo = userResult.Data.ProfileInfo,
-                Coins = userResult.Data.Coins ?? 0, // Handle null case
+                Coins = userResult.Data.Coins ?? 0,
             };
 
             return Ok(new ApiResult<UserDto>
@@ -84,7 +79,6 @@ public class UserController : Controller
         }
         catch (Exception ex)
         {
-            // Log the exception here if necessary
             return StatusCode(StatusCodes.Status500InternalServerError, ApiResult<string>.Fail(ex));
         }
     }

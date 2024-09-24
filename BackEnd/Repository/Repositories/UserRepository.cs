@@ -25,6 +25,13 @@ namespace Repository
             return await _userManager.FindByEmailAsync(email);
         }
 
+
+        public async Task<User> GetUseByUserName(string userName)
+        {
+            return await _userManager.FindByNameAsync(userName);
+        }
+
+
         public async Task<IdentityResult> CreateUserAsync(User user)
         {
             // Kiểm tra và tạo vai trò "User" nếu chưa tồn tại
@@ -97,6 +104,8 @@ namespace Repository
             user.RefreshToken = refreshToken;
             await _userManager.UpdateAsync(user);
         }
+
+
     }
 
 

@@ -21,7 +21,6 @@ public class UserService : IUserService
     {
         try
         {
-            // Validate userId
             if (userId <= 0)
             {
                 return ApiResult<User>.Error(null, "Invalid user ID.");
@@ -44,7 +43,6 @@ public class UserService : IUserService
     {
         try
         {
-            // Validate email
             if (string.IsNullOrWhiteSpace(email) || !IsValidEmail(email))
             {
                 return ApiResult<UserDto>.Error(null, "Invalid email.");

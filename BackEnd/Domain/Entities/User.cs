@@ -23,10 +23,8 @@ public class User : IdentityUser<int>
     public ICollection<UserChatRoom> UserChatRooms { get; set; }
     public ICollection<Message> Messages { get; set; }
 
-    // Constructor to initialize default values
     public User()
     {
-        // Set default values here
         Coins = 0;
         ProfileInfo = "Welcome to the platform!";
         LearningSessions = new List<LearningSession>();
