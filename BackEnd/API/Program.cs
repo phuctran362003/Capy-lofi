@@ -1,8 +1,7 @@
 using API;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Repository;
@@ -10,7 +9,7 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Add services to the container
 builder.Services.AddProjectServices(builder.Configuration); // Using the DI class for dependency injection
 
 // Add services for SignalR
@@ -21,14 +20,17 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "CapyLofi API", Version = "v1" });
+
+    // Modify the Swagger Security Definition to remove "Bearer " from the required input
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
+        Description = "Enter your JWT token below without the 'Bearer' prefix.",
         Name = "Authorization",
         In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Type = SecuritySchemeType.ApiKey,  // Use ApiKey instead of Http to control the scheme behavior
+        Scheme = "Bearer"  // Keep the scheme as Bearer, but user will only enter the token
     });
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement()
     {
         {
@@ -39,14 +41,14 @@ builder.Services.AddSwaggerGen(c =>
                     Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
                 },
-                Scheme = "oauth2",
-                Name = "Bearer",
                 In = ParameterLocation.Header,
             },
             new List<string>()
         }
     });
 });
+
+
 
 // CORS Configuration
 builder.Services.AddCors(options =>
@@ -60,34 +62,20 @@ builder.Services.AddCors(options =>
     });
 });
 
+// Add Identity Core
+builder.Services.AddIdentityCore<User>()
+    .AddEntityFrameworkStores<CapyLofiDbContext>()
+    .AddApiEndpoints();
+
+// Add DbContext with PostgreSQL
+builder.Services.AddDbContext<CapyLofiDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 // Add Authentication
 builder.Services.AddAuthentication(options =>
 {
-    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-})
-.AddCookie()
-.AddGoogle(options =>
-{
-    options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-    options.CallbackPath = "/api/auth/google-callback";
-    options.Events.OnRedirectToAuthorizationEndpoint = context =>
-    {
-        // Log the redirect URI
-        Console.WriteLine($"Redirect URI: {context.RedirectUri}");
-        context.Response.Redirect(context.RedirectUri);
-        return Task.CompletedTask;
-    };
-    options.Events.OnRemoteFailure = context =>
-    {
-        // Log the error
-        Console.WriteLine($"Remote failure: {context.Failure}");
-        context.Response.Redirect("/error?FailureMessage=" + context.Failure.Message);
-        context.HandleResponse();
-        return Task.CompletedTask;
-    };
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme; // Set JWT as default
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;    // Set JWT as default challenge scheme
 })
 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
 {
@@ -97,13 +85,15 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],  // Correct reference to "JwtSettings"
+        ValidAudience = builder.Configuration["JwtSettings:Audience"],  // Correct reference to "JwtSettings"
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:SecretKey"]))  // Correct reference to SecretKey
     };
 });
 
+
 var app = builder.Build();
+
 // Initialize the database
 using (var scope = app.Services.CreateScope())
 {
@@ -114,7 +104,7 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<User>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole<int>>>();
 
-        // Đợi cho đến khi phương thức khởi tạo kết thúc
+        // Wait for database initialization to complete
         await DbInitializer.InitializeAsync(context, userManager, roleManager);
     }
     catch (Exception ex)
@@ -125,7 +115,7 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();

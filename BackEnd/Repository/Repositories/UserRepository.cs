@@ -1,5 +1,5 @@
-﻿using Repository.Interfaces;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
+using Repository.Interfaces;
 
 namespace Repository
 {
@@ -24,6 +24,13 @@ namespace Repository
         {
             return await _userManager.FindByEmailAsync(email);
         }
+
+
+        public async Task<User> GetUseByUserName(string userName)
+        {
+            return await _userManager.FindByNameAsync(userName);
+        }
+
 
         public async Task<IdentityResult> CreateUserAsync(User user)
         {
@@ -83,13 +90,13 @@ namespace Repository
 
         public async Task UpdateOtpAsync(User user, string hashedOtp)
         {
-            user.Otp = hashedOtp; 
+            user.Otp = hashedOtp;
             await _userManager.UpdateAsync(user);
         }
 
         public async Task<bool> VerifyOtpAsync(User user, string hashedOtp)
         {
-            return user.Otp == hashedOtp; 
+            return user.Otp == hashedOtp;
         }
 
         public async Task UpdateRefreshTokenAsync(User user, string refreshToken)
@@ -97,6 +104,8 @@ namespace Repository
             user.RefreshToken = refreshToken;
             await _userManager.UpdateAsync(user);
         }
+
+
     }
 
 

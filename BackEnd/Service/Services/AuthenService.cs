@@ -1,11 +1,7 @@
-﻿using Repository.Commons;
+﻿using Microsoft.AspNetCore.Identity;
+using Repository.Commons;
 using Repository.Interfaces;
 using Service.Interfaces;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Service.Services
 {
@@ -13,11 +9,45 @@ namespace Service.Services
     {
         private readonly IUserRepository _userRepository;
         private readonly IOtpService _otpService;
-        public AuthenService(IUserRepository userRepository, IOtpService otpService)
+        private readonly IPasswordHasher<User> _passwordHasher;
+        public AuthenService(IUserRepository userRepository, IOtpService otpService, IPasswordHasher<User> passwordHasher)
         {
             _userRepository = userRepository;
             _otpService = otpService;
+            _passwordHasher = passwordHasher;
         }
+
+
+
+        public async Task<ApiResult<User>> LoginAsync(string username, string password)
+        {
+            try
+            {
+                var user = await _userRepository.GetUseByUserName(username);
+                if (user == null)
+                {
+                    return ApiResult<User>.Error(null, "User not found");
+                }
+
+                // Use PasswordHasher to verify the password
+                var verificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password);
+
+                if (verificationResult == PasswordVerificationResult.Success)
+                {
+                    return ApiResult<User>.Succeed(user, "Login Successful");
+                }
+                else
+                {
+                    return ApiResult<User>.Error(null, "Invalid Password");
+                }
+            }
+            catch (Exception ex)
+            {
+                return ApiResult<User>.Fail(ex);
+            }
+        }
+
+
 
         public async Task<ApiResult<User>> VerifyOtpAsync(string email, string otpCode)
         {
@@ -33,11 +63,11 @@ namespace Service.Services
                     return ApiResult<User>.Error(null, "OTP code cannot be empty.");
                 }
 
-                var user = await _userRepository.GetUserByEmailAsync(email);
+                var user = await _userRepository.GetUserByEmailAsync(email); // This is probably null
 
                 if (user == null)
                 {
-                    return ApiResult<User>.Error(null, "User not found.");
+                    return ApiResult<User>.Error(null, "User not found.");  // Add this check to handle null user
                 }
 
                 var otpValidationResult = await _otpService.ValidateOtpAsync(user, otpCode);
@@ -53,6 +83,7 @@ namespace Service.Services
                 return ApiResult<User>.Fail(ex);
             }
         }
+
 
         public async Task<ApiResult<bool>> UpdateRefreshTokenAsync(User user, string refreshToken)
         {
@@ -90,5 +121,9 @@ namespace Service.Services
                 return false;
             }
         }
+
+
+
+
     }
 }
