@@ -1,4 +1,5 @@
 ﻿using Domain.DTOs.UserDTOs;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Repository.Commons;
 using Service.Interfaces;
@@ -7,7 +8,8 @@ using System.Security.Claims;
 namespace API.Controllers;
 
 [ApiController]
-[Route("api/v1/auth")]
+[Route("api/v1/profile")]
+[Authorize]
 public class UserController : Controller
 {
     private readonly IUserService _userService;
@@ -17,7 +19,21 @@ public class UserController : Controller
         _userService = userService;
     }
 
-    [HttpGet("me")]
+    [HttpPost("displayName")]
+    public async Task<IActionResult> UpdateDisplayName(string newDisplayName)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get the current logged-in user's ID
+        var result = await _userService.UpdateUserDisplayNameAsync(int.Parse(userId), newDisplayName);
+
+        if (!result.Success)
+        {
+            return BadRequest(result.Message);
+        }
+
+        return Ok(result.Message);
+    }
+
+    [HttpGet("current-user")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -25,15 +41,7 @@ public class UserController : Controller
     {
         try
         {
-            if (!User.Identity.IsAuthenticated)
-            {
-                return Unauthorized(new ApiResult<string>
-                {
-                    Success = false,
-                    Data = null,
-                    Message = "User is not authenticated."
-                });
-            }
+
 
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
@@ -82,4 +90,8 @@ public class UserController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError, ApiResult<string>.Fail(ex));
         }
     }
+
+
+
+
 }

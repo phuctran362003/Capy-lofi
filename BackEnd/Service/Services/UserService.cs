@@ -6,15 +6,50 @@ using Service.Interfaces;
 
 public class UserService : IUserService
 {
-    private readonly IUserRepository _userRepository;
     private readonly EmailService _emailService;
     private readonly IOtpService _otpService;
+    private readonly IUnitOfWork _unitOfWork;
 
-    public UserService(IUserRepository userRepository, EmailService emailService, IOtpService otpService)
+    public UserService(EmailService emailService, IOtpService otpService, IUnitOfWork unitOfWork)
     {
-        _userRepository = userRepository;
         _emailService = emailService;
         _otpService = otpService;
+        _unitOfWork = unitOfWork;
+    }
+
+
+    public async Task<ApiResult<User>> UpdateUserDisplayNameAsync(int userId, string newDisplayName)
+    {
+        try
+        {
+            if (userId <= 0 || string.IsNullOrEmpty(newDisplayName))
+            {
+                return ApiResult<User>.Error(null, "Invalid userID or display name");
+
+            }
+
+
+            var user = await _unitOfWork.UserRepository.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return ApiResult<User>.Error(null, "User not found");
+
+            }
+
+            var result = await _unitOfWork.UserRepository.UpdateDisplayNameAsync(user, newDisplayName);
+            if (!result.Succeeded)
+            {
+                return ApiResult<User>.Error(null, "Failed to update display name.");
+
+            }
+            await _unitOfWork.SaveChangeAsync();
+            return ApiResult<User>.Succeed(null, "Display name updated successfully.");
+        }
+        catch (Exception ex)
+        {
+
+            return ApiResult<User>.Fail(ex);
+        }
     }
 
     public async Task<ApiResult<User>> GetUserByIdAsync(int userId)
@@ -26,7 +61,7 @@ public class UserService : IUserService
                 return ApiResult<User>.Error(null, "Invalid user ID.");
             }
 
-            var user = await _userRepository.GetUserByIdAsync(userId);
+            var user = await _unitOfWork.UserRepository.GetUserByIdAsync(userId);
             if (user == null)
             {
                 return ApiResult<User>.Error(null, "User not found.");
@@ -49,7 +84,7 @@ public class UserService : IUserService
             }
 
             var otpCode = _otpService.GenerateOtp();
-            var user = await _userRepository.GetUserByEmailAsync(email);
+            var user = await _unitOfWork.UserRepository.GetUserByEmailAsync(email);
 
             if (user != null)
             {
@@ -66,15 +101,17 @@ public class UserService : IUserService
                     EmailConfirmed = true
                 };
 
-                var result = await _userRepository.CreateUserAsync(user);
+                var result = await _unitOfWork.UserRepository.CreateDefaultUserAsync(user);
+
                 if (!result.Succeeded)
                 {
                     return ApiResult<UserDto>.Error(null, "Failed to create user.");
                 }
 
                 await _otpService.SaveOtpAsync(user, otpCode);
-            }
 
+            }
+            await _unitOfWork.SaveChangeAsync();
             await _emailService.SendOtpAsync(email, otpCode);
 
             var userDto = new UserDto

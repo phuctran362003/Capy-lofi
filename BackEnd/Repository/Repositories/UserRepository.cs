@@ -32,7 +32,7 @@ namespace Repository
         }
 
 
-        public async Task<IdentityResult> CreateUserAsync(User user)
+        public async Task<IdentityResult> CreateDefaultUserAsync(User user)
         {
             // Kiểm tra và tạo vai trò "User" nếu chưa tồn tại
             if (!await _roleManager.RoleExistsAsync("User"))
@@ -103,6 +103,14 @@ namespace Repository
         {
             user.RefreshToken = refreshToken;
             await _userManager.UpdateAsync(user);
+        }
+
+        public async Task<IdentityResult> UpdateDisplayNameAsync(User user, string newDisplayName)
+        {
+            user.DisplayName = newDisplayName;
+            var result = await _userManager.UpdateAsync(user);
+
+            return result;
         }
 
 
