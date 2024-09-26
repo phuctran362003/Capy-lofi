@@ -4,12 +4,10 @@ using Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
-builder.Services.AddProjectServices(builder.Configuration); // Moved most configurations to DI.cs
+builder.Services.AddProjectServices(builder.Configuration); 
 
 var app = builder.Build();
 
-// Initialize the database
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;

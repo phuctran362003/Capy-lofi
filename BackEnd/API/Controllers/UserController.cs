@@ -27,10 +27,20 @@ public class UserController : Controller
 
         if (!result.Success)
         {
-            return BadRequest(result.Message);
+            return BadRequest(new ApiResult<User>
+            {
+                Data = null,
+                Message = "Error",
+                Success = false
+            });
         }
 
-        return Ok(result.Message);
+        return Ok(new ApiResult<string>
+        {
+            Data = newDisplayName,
+            Message = "Update displayName successfully",
+            Success = true
+        });
     }
 
     [HttpGet("current-user")]
@@ -41,8 +51,6 @@ public class UserController : Controller
     {
         try
         {
-
-
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
             {
@@ -69,7 +77,6 @@ public class UserController : Controller
 
             var userDto = new UserDto
             {
-
                 Id = userResult.Data.Id,
                 Name = userResult.Data.Name,
                 DisplayName = userResult.Data.DisplayName,
@@ -90,8 +97,4 @@ public class UserController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError, ApiResult<string>.Fail(ex));
         }
     }
-
-
-
-
 }

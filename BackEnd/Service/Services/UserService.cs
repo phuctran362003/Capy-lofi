@@ -43,7 +43,7 @@ public class UserService : IUserService
 
             }
             await _unitOfWork.SaveChangeAsync();
-            return ApiResult<User>.Succeed(null, "Display name updated successfully.");
+            return ApiResult<User>.Succeed(user, "Display name updated successfully.");
         }
         catch (Exception ex)
         {
