@@ -19,29 +19,53 @@ public class UserController : Controller
         _userService = userService;
     }
 
-    [HttpPost("displayName")]
-    public async Task<IActionResult> UpdateDisplayName(string newDisplayName)
+    [HttpPost("update-profile")]
+    public async Task<IActionResult> UpdateUserProfile([FromBody] UpdateUserProfileDto updateUserProfileDto)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get the current logged-in user's ID
-        var result = await _userService.UpdateUserDisplayNameAsync(int.Parse(userId), newDisplayName);
-
-        if (!result.Success)
+        try
         {
-            return BadRequest(new ApiResult<User>
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest(new ApiResult<string>
+                {
+                    Data = null,
+                    Message = "User ID not found",
+                    Success = false
+                });
+            }
+
+            // Update the user profile using the service
+            var result = await _userService.UpdateUserProfileAsync(int.Parse(userId), updateUserProfileDto);
+
+            if (!result.Success)
+            {
+                return BadRequest(new ApiResult<User>
+                {
+                    Data = null,
+                    Message = "Error updating user profile",
+                    Success = false
+                });
+            }
+
+            return Ok(new ApiResult<UpdateUserProfileDto>
+            {
+                Data = result.Data,
+                Message = "User profile updated successfully",
+                Success = true
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResult<string>
             {
                 Data = null,
-                Message = "Error",
+                Message = $"An unexpected error occurred: {ex.Message}",
                 Success = false
             });
         }
-
-        return Ok(new ApiResult<string>
-        {
-            Data = newDisplayName,
-            Message = "Update displayName successfully",
-            Success = true
-        });
     }
+
 
     [HttpGet("current-user")]
     [ProducesResponseType(StatusCodes.Status200OK)]

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Domain.DTOs.UserDTOs;
+using Microsoft.AspNetCore.Identity;
 
 namespace Repository.Interfaces;
 
@@ -11,7 +12,6 @@ public interface IUserRepository
     Task UpdateOtpAsync(User user, string otpCode);
     Task<bool> VerifyOtpAsync(User user, string otpCode);
     Task UpdateRefreshTokenAsync(User user, string refreshToken);
-
-    Task<IdentityResult> UpdateDisplayNameAsync(User user, string newDisplayName);
+    Task<IdentityResult> UpdateUserProfileAsync(User user, UpdateUserProfileDto userProfileDto);
 }
 
