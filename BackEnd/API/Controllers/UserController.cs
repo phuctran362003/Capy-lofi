@@ -9,7 +9,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/v1/profile")]
-[Authorize]
+[Authorize(Policy = "UserPolicy")]
 public class UserController : Controller
 {
     private readonly IUserService _userService;
@@ -19,19 +19,53 @@ public class UserController : Controller
         _userService = userService;
     }
 
-    [HttpPost("displayName")]
-    public async Task<IActionResult> UpdateDisplayName(string newDisplayName)
+    [HttpPost("update-profile")]
+    public async Task<IActionResult> UpdateUserProfile([FromBody] UpdateUserProfileDto updateUserProfileDto)
     {
-        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // Get the current logged-in user's ID
-        var result = await _userService.UpdateUserDisplayNameAsync(int.Parse(userId), newDisplayName);
-
-        if (!result.Success)
+        try
         {
-            return BadRequest(result.Message);
-        }
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return BadRequest(new ApiResult<string>
+                {
+                    Data = null,
+                    Message = "User ID not found",
+                    Success = false
+                });
+            }
 
-        return Ok(result.Message);
+            // Update the user profile using the service
+            var result = await _userService.UpdateUserProfileAsync(int.Parse(userId), updateUserProfileDto);
+
+            if (!result.Success)
+            {
+                return BadRequest(new ApiResult<User>
+                {
+                    Data = null,
+                    Message = "Error updating user profile",
+                    Success = false
+                });
+            }
+
+            return Ok(new ApiResult<UpdateUserProfileDto>
+            {
+                Data = result.Data,
+                Message = "User profile updated successfully",
+                Success = true
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new ApiResult<string>
+            {
+                Data = null,
+                Message = $"An unexpected error occurred: {ex.Message}",
+                Success = false
+            });
+        }
     }
+
 
     [HttpGet("current-user")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -41,8 +75,6 @@ public class UserController : Controller
     {
         try
         {
-
-
             var userIdClaim = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
             if (userIdClaim == null)
             {
@@ -69,7 +101,6 @@ public class UserController : Controller
 
             var userDto = new UserDto
             {
-
                 Id = userResult.Data.Id,
                 Name = userResult.Data.Name,
                 DisplayName = userResult.Data.DisplayName,
@@ -90,8 +121,4 @@ public class UserController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError, ApiResult<string>.Fail(ex));
         }
     }
-
-
-
-
 }

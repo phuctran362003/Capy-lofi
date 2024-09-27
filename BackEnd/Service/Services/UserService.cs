@@ -18,39 +18,36 @@ public class UserService : IUserService
     }
 
 
-    public async Task<ApiResult<User>> UpdateUserDisplayNameAsync(int userId, string newDisplayName)
+    public async Task<ApiResult<UpdateUserProfileDto>> UpdateUserProfileAsync(int userId, UpdateUserProfileDto updateUserProfileDto)
     {
         try
         {
-            if (userId <= 0 || string.IsNullOrEmpty(newDisplayName))
-            {
-                return ApiResult<User>.Error(null, "Invalid userID or display name");
-
-            }
-
+            if (userId <= 0 || updateUserProfileDto == null)
+                return ApiResult<UpdateUserProfileDto>.Error(null, "Invalid user ID or update data");
 
             var user = await _unitOfWork.UserRepository.GetUserByIdAsync(userId);
             if (user == null)
-            {
-                return ApiResult<User>.Error(null, "User not found");
+                return ApiResult<UpdateUserProfileDto>.Error(null, "User not found");
 
-            }
+            // Update fields only if values are provided in the DTO
+            user.DisplayName = updateUserProfileDto.DisplayName ?? user.DisplayName;
+            user.ProfileInfo = updateUserProfileDto.ProfileInfo ?? user.ProfileInfo;
+            user.PhotoUrl = updateUserProfileDto.PhotoUrl ?? user.PhotoUrl;
 
-            var result = await _unitOfWork.UserRepository.UpdateDisplayNameAsync(user, newDisplayName);
+            var result = await _unitOfWork.UserRepository.UpdateUserProfileAsync(user, updateUserProfileDto);
             if (!result.Succeeded)
-            {
-                return ApiResult<User>.Error(null, "Failed to update display name.");
+                return ApiResult<UpdateUserProfileDto>.Error(null, "Failed to update user profile");
 
-            }
             await _unitOfWork.SaveChangeAsync();
-            return ApiResult<User>.Succeed(null, "Display name updated successfully.");
+            return ApiResult<UpdateUserProfileDto>.Succeed(updateUserProfileDto, "User profile updated successfully.");
         }
         catch (Exception ex)
         {
-
-            return ApiResult<User>.Fail(ex);
+            return ApiResult<UpdateUserProfileDto>.Fail(ex);
         }
     }
+
+
 
     public async Task<ApiResult<User>> GetUserByIdAsync(int userId)
     {

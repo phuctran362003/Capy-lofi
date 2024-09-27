@@ -4,12 +4,19 @@ using Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container
-builder.Services.AddProjectServices(builder.Configuration); // Moved most configurations to DI.cs
+builder.Services.AddProjectServices(builder.Configuration);
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("UserPolicy", policy =>
+        policy.RequireRole("User"));  // This uses role-based authorization
+    options.AddPolicy("AdminPolicy", policy =>
+        policy.RequireRole("Admin")); // This uses role-based authorization
+});
+
 
 var app = builder.Build();
 
-// Initialize the database
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -49,6 +56,8 @@ app.UseRouting();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+
+
 
 app.MapControllers();
 app.MapHub<ChatHub>("/chat-hub");

@@ -17,7 +17,6 @@ namespace Repository.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("identity")
                 .HasAnnotation("ProductVersion", "8.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
@@ -80,7 +79,7 @@ namespace Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Backgrounds", "identity");
+                    b.ToTable("Backgrounds");
                 });
 
             modelBuilder.Entity("Domain.Entities.ChatInvitation", b =>
@@ -136,7 +135,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ChatInvitations", "identity");
+                    b.ToTable("ChatInvitations");
                 });
 
             modelBuilder.Entity("Domain.Entities.ChatRoom", b =>
@@ -187,7 +186,7 @@ namespace Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ChatRooms", "identity");
+                    b.ToTable("ChatRooms");
                 });
 
             modelBuilder.Entity("Domain.Entities.Feedback", b =>
@@ -234,7 +233,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Feedbacks", "identity");
+                    b.ToTable("Feedbacks");
                 });
 
             modelBuilder.Entity("Domain.Entities.LearningSession", b =>
@@ -284,7 +283,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("LearningSessions", "identity");
+                    b.ToTable("LearningSessions");
                 });
 
             modelBuilder.Entity("Domain.Entities.Message", b =>
@@ -334,7 +333,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Messages", "identity");
+                    b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("Domain.Entities.Music", b =>
@@ -400,7 +399,7 @@ namespace Repository.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Musics", "identity");
+                    b.ToTable("Musics");
                 });
 
             modelBuilder.Entity("Domain.Entities.Order", b =>
@@ -455,7 +454,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Orders", "identity");
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("Domain.Entities.UserBackground", b =>
@@ -470,7 +469,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("BackgroundId");
 
-                    b.ToTable("UserBackgrounds", "identity");
+                    b.ToTable("UserBackgrounds");
                 });
 
             modelBuilder.Entity("Domain.Entities.UserChatRoom", b =>
@@ -493,7 +492,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("LastReadMessageId");
 
-                    b.ToTable("UserChatRooms", "identity");
+                    b.ToTable("UserChatRooms");
                 });
 
             modelBuilder.Entity("Domain.Entities.UserMusic", b =>
@@ -508,7 +507,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("MusicId");
 
-                    b.ToTable("UserMusics", "identity");
+                    b.ToTable("UserMusics");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<int>", b =>
@@ -538,7 +537,7 @@ namespace Repository.Migrations
                         .HasDatabaseName("RoleNameIndex")
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
-                    b.ToTable("AspNetRoles", "identity");
+                    b.ToTable("AspNetRoles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
@@ -562,7 +561,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AspNetRoleClaims", "identity");
+                    b.ToTable("AspNetRoleClaims", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<int>", b =>
@@ -586,7 +585,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AspNetUserClaims", "identity");
+                    b.ToTable("AspNetUserClaims", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<int>", b =>
@@ -607,7 +606,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("AspNetUserLogins", "identity");
+                    b.ToTable("AspNetUserLogins", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<int>", b =>
@@ -622,7 +621,7 @@ namespace Repository.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("AspNetUserRoles", "identity");
+                    b.ToTable("AspNetUserRoles", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<int>", b =>
@@ -641,7 +640,7 @@ namespace Repository.Migrations
 
                     b.HasKey("UserId", "LoginProvider", "Name");
 
-                    b.ToTable("AspNetUserTokens", "identity");
+                    b.ToTable("AspNetUserTokens", (string)null);
                 });
 
             modelBuilder.Entity("User", b =>
@@ -671,8 +670,8 @@ namespace Repository.Migrations
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
@@ -744,7 +743,7 @@ namespace Repository.Migrations
                         .HasDatabaseName("UserNameIndex")
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
-                    b.ToTable("AspNetUsers", "identity");
+                    b.ToTable("AspNetUsers", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.ChatInvitation", b =>

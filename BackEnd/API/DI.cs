@@ -13,6 +13,7 @@ using Repository.Repositories;
 using Service.Interfaces;
 using Service.Mappers;
 using Service.Services;
+using System.Security.Claims;
 using System.Text;
 using JwtSettings = Repository.Commons.JwtSettings;
 
@@ -29,6 +30,8 @@ namespace API
             services.AddDbContext<CapyLofiDbContext>(options =>
                 options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 
+
+            // Configure Identity with role management
             services.AddIdentity<User, IdentityRole<int>>()
                 .AddEntityFrameworkStores<CapyLofiDbContext>()
                 .AddDefaultTokenProviders();
@@ -114,6 +117,15 @@ namespace API
                         return context.Response.WriteAsync(result);
                     }
                 };
+            });
+
+
+            services.AddAuthorization(options =>
+            {
+                options.AddPolicy("UserPolicy", policy =>
+                    policy.RequireClaim(ClaimTypes.Role, "User"));
+                options.AddPolicy("AdminPolicy", policy =>
+                    policy.RequireClaim(ClaimTypes.Role, "Admin"));
             });
 
             // Add Swagger configuration

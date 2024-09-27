@@ -126,11 +126,17 @@ public class AuthController : Controller
 
     private async Task<IActionResult> GenerateTokensAndSetCookies(User user)
     {
-        var tokens = _tokenService.GenerateTokens(user);
+        var tokens = await _tokenService.GenerateTokensAsync(user);
 
         await _authenService.UpdateRefreshTokenAsync(user, tokens.RefreshToken);
 
-        Response.Cookies.Append("jwt", tokens.AccessToken, new CookieOptions { HttpOnly = true, Secure = true });
+        Response.Cookies.Append("jwt", tokens.AccessToken, new CookieOptions
+        {
+            HttpOnly = true,
+            Secure = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTimeOffset.UtcNow.AddMinutes(double.Parse(_configuration["JwtSettings:AccessTokenExpirationMinutes"]))
+        });
 
         var accessTokenExpirationMinutes = _configuration["JwtSettings:AccessTokenExpirationMinutes"];
         var refreshTokenExpirationMinutes = _configuration["JwtSettings:RefreshTokenExpirationMinutes"];
@@ -145,6 +151,7 @@ public class AuthController : Controller
 
         return Ok(successResult);
     }
+
 
 
 }

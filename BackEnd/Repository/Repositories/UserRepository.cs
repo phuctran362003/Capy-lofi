@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Domain.DTOs.UserDTOs;
+using Microsoft.AspNetCore.Identity;
 using Repository.Interfaces;
 
 namespace Repository
@@ -105,13 +106,17 @@ namespace Repository
             await _userManager.UpdateAsync(user);
         }
 
-        public async Task<IdentityResult> UpdateDisplayNameAsync(User user, string newDisplayName)
+        public async Task<IdentityResult> UpdateUserProfileAsync(User user, UpdateUserProfileDto userProfileDto)
         {
-            user.DisplayName = newDisplayName;
+            user.DisplayName = userProfileDto.DisplayName;
+            user.ProfileInfo = userProfileDto.ProfileInfo;
+            user.PhotoUrl = userProfileDto.PhotoUrl;
+
             var result = await _userManager.UpdateAsync(user);
 
             return result;
         }
+
 
 
     }

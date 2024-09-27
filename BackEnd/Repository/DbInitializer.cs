@@ -20,7 +20,6 @@ public class DbInitializer
             //Create Roles
             await roleManager.CreateAsync(roleAdmin);
             await roleManager.CreateAsync(roleCustomer);
-
         }
 
         // Seed Users
