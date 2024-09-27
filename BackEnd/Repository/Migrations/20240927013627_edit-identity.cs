@@ -5,10 +5,104 @@
 namespace Repository.Migrations
 {
     /// <inheritdoc />
-    public partial class IdentitySchema : Migration
+    public partial class editidentity : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.RenameTable(
+                name: "UserMusics",
+                schema: "identity",
+                newName: "UserMusics");
+
+            migrationBuilder.RenameTable(
+                name: "UserChatRooms",
+                schema: "identity",
+                newName: "UserChatRooms");
+
+            migrationBuilder.RenameTable(
+                name: "UserBackgrounds",
+                schema: "identity",
+                newName: "UserBackgrounds");
+
+            migrationBuilder.RenameTable(
+                name: "Orders",
+                schema: "identity",
+                newName: "Orders");
+
+            migrationBuilder.RenameTable(
+                name: "Musics",
+                schema: "identity",
+                newName: "Musics");
+
+            migrationBuilder.RenameTable(
+                name: "Messages",
+                schema: "identity",
+                newName: "Messages");
+
+            migrationBuilder.RenameTable(
+                name: "LearningSessions",
+                schema: "identity",
+                newName: "LearningSessions");
+
+            migrationBuilder.RenameTable(
+                name: "Feedbacks",
+                schema: "identity",
+                newName: "Feedbacks");
+
+            migrationBuilder.RenameTable(
+                name: "ChatRooms",
+                schema: "identity",
+                newName: "ChatRooms");
+
+            migrationBuilder.RenameTable(
+                name: "ChatInvitations",
+                schema: "identity",
+                newName: "ChatInvitations");
+
+            migrationBuilder.RenameTable(
+                name: "Backgrounds",
+                schema: "identity",
+                newName: "Backgrounds");
+
+            migrationBuilder.RenameTable(
+                name: "AspNetUserTokens",
+                schema: "identity",
+                newName: "AspNetUserTokens");
+
+            migrationBuilder.RenameTable(
+                name: "AspNetUsers",
+                schema: "identity",
+                newName: "AspNetUsers");
+
+            migrationBuilder.RenameTable(
+                name: "AspNetUserRoles",
+                schema: "identity",
+                newName: "AspNetUserRoles");
+
+            migrationBuilder.RenameTable(
+                name: "AspNetUserLogins",
+                schema: "identity",
+                newName: "AspNetUserLogins");
+
+            migrationBuilder.RenameTable(
+                name: "AspNetUserClaims",
+                schema: "identity",
+                newName: "AspNetUserClaims");
+
+            migrationBuilder.RenameTable(
+                name: "AspNetRoles",
+                schema: "identity",
+                newName: "AspNetRoles");
+
+            migrationBuilder.RenameTable(
+                name: "AspNetRoleClaims",
+                schema: "identity",
+                newName: "AspNetRoleClaims");
+        }
+
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
                 name: "identity");
@@ -102,100 +196,6 @@ namespace Repository.Migrations
                 name: "AspNetRoleClaims",
                 newName: "AspNetRoleClaims",
                 newSchema: "identity");
-        }
-
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
-            migrationBuilder.RenameTable(
-                name: "UserMusics",
-                schema: "identity",
-                newName: "UserMusics");
-
-            migrationBuilder.RenameTable(
-                name: "UserChatRooms",
-                schema: "identity",
-                newName: "UserChatRooms");
-
-            migrationBuilder.RenameTable(
-                name: "UserBackgrounds",
-                schema: "identity",
-                newName: "UserBackgrounds");
-
-            migrationBuilder.RenameTable(
-                name: "Orders",
-                schema: "identity",
-                newName: "Orders");
-
-            migrationBuilder.RenameTable(
-                name: "Musics",
-                schema: "identity",
-                newName: "Musics");
-
-            migrationBuilder.RenameTable(
-                name: "Messages",
-                schema: "identity",
-                newName: "Messages");
-
-            migrationBuilder.RenameTable(
-                name: "LearningSessions",
-                schema: "identity",
-                newName: "LearningSessions");
-
-            migrationBuilder.RenameTable(
-                name: "Feedbacks",
-                schema: "identity",
-                newName: "Feedbacks");
-
-            migrationBuilder.RenameTable(
-                name: "ChatRooms",
-                schema: "identity",
-                newName: "ChatRooms");
-
-            migrationBuilder.RenameTable(
-                name: "ChatInvitations",
-                schema: "identity",
-                newName: "ChatInvitations");
-
-            migrationBuilder.RenameTable(
-                name: "Backgrounds",
-                schema: "identity",
-                newName: "Backgrounds");
-
-            migrationBuilder.RenameTable(
-                name: "AspNetUserTokens",
-                schema: "identity",
-                newName: "AspNetUserTokens");
-
-            migrationBuilder.RenameTable(
-                name: "AspNetUsers",
-                schema: "identity",
-                newName: "AspNetUsers");
-
-            migrationBuilder.RenameTable(
-                name: "AspNetUserRoles",
-                schema: "identity",
-                newName: "AspNetUserRoles");
-
-            migrationBuilder.RenameTable(
-                name: "AspNetUserLogins",
-                schema: "identity",
-                newName: "AspNetUserLogins");
-
-            migrationBuilder.RenameTable(
-                name: "AspNetUserClaims",
-                schema: "identity",
-                newName: "AspNetUserClaims");
-
-            migrationBuilder.RenameTable(
-                name: "AspNetRoles",
-                schema: "identity",
-                newName: "AspNetRoles");
-
-            migrationBuilder.RenameTable(
-                name: "AspNetRoleClaims",
-                schema: "identity",
-                newName: "AspNetRoleClaims");
         }
     }
 }

@@ -29,8 +29,7 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Gọi base để đảm bảo cấu hình các bảng liên quan đến Identity
-        base.OnModelCreating(modelBuilder);
+
 
         // Cấu hình tùy chỉnh cho User
         modelBuilder.Entity<User>(entity =>
@@ -43,7 +42,6 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
             entity.Property(e => e.PhotoUrl).HasMaxLength(255);
         });
 
-        modelBuilder.HasDefaultSchema("identity");
         // Cấu hình các thực thể khác như LearningSessions, Orders, Musics, Backgrounds, UserMusic, UserBackgrounds, Feedbacks
         modelBuilder.Entity<LearningSession>(entity =>
         {
@@ -149,6 +147,8 @@ public class CapyLofiDbContext : IdentityDbContext<User, IdentityRole<int>, int>
 
         // Cấu hình các thuộc tính cơ bản của thực thể
         ConfigureBaseEntityProperties(modelBuilder);
+        // Gọi base để đảm bảo cấu hình các bảng liên quan đến Identity
+        base.OnModelCreating(modelBuilder);
     }
 
     private void ConfigureBaseEntityProperties(ModelBuilder modelBuilder)

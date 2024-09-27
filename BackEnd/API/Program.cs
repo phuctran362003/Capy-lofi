@@ -4,7 +4,16 @@ using Repository;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddProjectServices(builder.Configuration); 
+builder.Services.AddProjectServices(builder.Configuration);
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("UserPolicy", policy =>
+        policy.RequireRole("User"));  // This uses role-based authorization
+    options.AddPolicy("AdminPolicy", policy =>
+        policy.RequireRole("Admin")); // This uses role-based authorization
+});
+
 
 var app = builder.Build();
 
@@ -47,6 +56,8 @@ app.UseRouting();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+
+
 
 app.MapControllers();
 app.MapHub<ChatHub>("/chat-hub");

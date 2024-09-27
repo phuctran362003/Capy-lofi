@@ -1,12 +1,8 @@
-﻿using System.Security.Claims;
-using Domain.Entities;
-using Newtonsoft.Json.Linq;
-
-namespace Service.Interfaces;
+﻿namespace Service.Interfaces;
 
 public interface ITokenService
 {
-    Tokens GenerateTokens(User user);
+    Task<Tokens> GenerateTokensAsync(User user);
 }
 
 public class Tokens

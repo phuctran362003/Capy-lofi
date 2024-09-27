@@ -9,7 +9,7 @@ namespace API.Controllers;
 
 [ApiController]
 [Route("api/v1/profile")]
-[Authorize]
+[Authorize(Policy = "UserPolicy")]
 public class UserController : Controller
 {
     private readonly IUserService _userService;
