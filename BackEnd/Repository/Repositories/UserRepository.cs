@@ -1,5 +1,6 @@
-﻿using Repository.Interfaces;
+﻿using Domain.DTOs.UserDTOs;
 using Microsoft.AspNetCore.Identity;
+using Repository.Interfaces;
 
 namespace Repository
 {
@@ -25,7 +26,14 @@ namespace Repository
             return await _userManager.FindByEmailAsync(email);
         }
 
-        public async Task<IdentityResult> CreateUserAsync(User user)
+
+        public async Task<User> GetUseByUserName(string userName)
+        {
+            return await _userManager.FindByNameAsync(userName);
+        }
+
+
+        public async Task<IdentityResult> CreateDefaultUserAsync(User user)
         {
             // Kiểm tra và tạo vai trò "User" nếu chưa tồn tại
             if (!await _roleManager.RoleExistsAsync("User"))
@@ -83,13 +91,13 @@ namespace Repository
 
         public async Task UpdateOtpAsync(User user, string hashedOtp)
         {
-            user.Otp = hashedOtp; 
+            user.Otp = hashedOtp;
             await _userManager.UpdateAsync(user);
         }
 
         public async Task<bool> VerifyOtpAsync(User user, string hashedOtp)
         {
-            return user.Otp == hashedOtp; 
+            return user.Otp == hashedOtp;
         }
 
         public async Task UpdateRefreshTokenAsync(User user, string refreshToken)
@@ -97,6 +105,20 @@ namespace Repository
             user.RefreshToken = refreshToken;
             await _userManager.UpdateAsync(user);
         }
+
+        public async Task<IdentityResult> UpdateUserProfileAsync(User user, UpdateUserProfileDto userProfileDto)
+        {
+            user.DisplayName = userProfileDto.DisplayName;
+            user.ProfileInfo = userProfileDto.ProfileInfo;
+            user.PhotoUrl = userProfileDto.PhotoUrl;
+
+            var result = await _userManager.UpdateAsync(user);
+
+            return result;
+        }
+
+
+
     }
 
 

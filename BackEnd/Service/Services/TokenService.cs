@@ -1,23 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
+﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using Service.Interfaces;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 public class TokenService : ITokenService
 {
     private readonly IConfiguration _configuration;
+    private readonly UserManager<User> _userManager;
 
-    public TokenService(IConfiguration configuration)
+    // Constructor
+    public TokenService(IConfiguration configuration, UserManager<User> userManager)
     {
         _configuration = configuration;
+        _userManager = userManager;  // Inject UserManager
     }
 
-    public Tokens GenerateTokens(User user)
+    public async Task<Tokens> GenerateTokensAsync(User user)
     {
         // Get JWT settings from configuration
         var jwtSettings = _configuration.GetSection("JwtSettings");
@@ -27,13 +28,22 @@ public class TokenService : ITokenService
         var accessTokenExpirationMinutes = int.Parse(jwtSettings["AccessTokenExpirationMinutes"]);
         var refreshTokenExpirationMinutes = int.Parse(jwtSettings["RefreshTokenExpirationMinutes"]);
 
+        // Fetch the roles of the user
+        var userRoles = await _userManager.GetRolesAsync(user);
+
         // Create claims for the token
-        var claims = new[]
+        var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
+
+        // Add role claims
+        foreach (var role in userRoles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role));
+        }
 
         // Generate Access Token
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));

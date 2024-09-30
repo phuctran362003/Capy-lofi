@@ -1,110 +1,22 @@
 using API;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi.Models;
 using Repository;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddProjectServices(builder.Configuration); // Using the DI class for dependency injection
+builder.Services.AddProjectServices(builder.Configuration);
 
-// Add services for SignalR
-builder.Services.AddSignalR();
-// Add controllers and Swagger
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+builder.Services.AddAuthorization(options =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "CapyLofi API", Version = "v1" });
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Description = "JWT Authorization header using the Bearer scheme. Example: \"Authorization: Bearer {token}\"",
-        Name = "Authorization",
-        In = ParameterLocation.Header,
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
-    });
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement()
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                },
-                Scheme = "oauth2",
-                Name = "Bearer",
-                In = ParameterLocation.Header,
-            },
-            new List<string>()
-        }
-    });
+    options.AddPolicy("UserPolicy", policy =>
+        policy.RequireRole("User"));  // This uses role-based authorization
+    options.AddPolicy("AdminPolicy", policy =>
+        policy.RequireRole("Admin")); // This uses role-based authorization
 });
 
-// CORS Configuration
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policyBuilder =>
-    {
-        policyBuilder.WithOrigins("http://localhost:5278", "https://localhost:5278", "http://localhost:3000", "https://localhost:3000")
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials();
-    });
-});
-
-// Add Authentication
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultSignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
-})
-.AddCookie()
-.AddGoogle(options =>
-{
-    options.ClientId = builder.Configuration["Authentication:Google:ClientId"];
-    options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"];
-    options.CallbackPath = "/api/auth/google-callback";
-    options.Events.OnRedirectToAuthorizationEndpoint = context =>
-    {
-        // Log the redirect URI
-        Console.WriteLine($"Redirect URI: {context.RedirectUri}");
-        context.Response.Redirect(context.RedirectUri);
-        return Task.CompletedTask;
-    };
-    options.Events.OnRemoteFailure = context =>
-    {
-        // Log the error
-        Console.WriteLine($"Remote failure: {context.Failure}");
-        context.Response.Redirect("/error?FailureMessage=" + context.Failure.Message);
-        context.HandleResponse();
-        return Task.CompletedTask;
-    };
-})
-.AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
-    };
-});
 
 var app = builder.Build();
-// Initialize the database
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
@@ -114,18 +26,16 @@ using (var scope = app.Services.CreateScope())
         var userManager = services.GetRequiredService<UserManager<User>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole<int>>>();
 
-        // Đợi cho đến khi phương thức khởi tạo kết thúc
         await DbInitializer.InitializeAsync(context, userManager, roleManager);
     }
     catch (Exception ex)
     {
-        // Log errors if any
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while seeding the database.");
     }
 }
 
-// Configure the HTTP request pipeline.
+// Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -143,11 +53,11 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 
-// Enable CORS
 app.UseCors();
-
 app.UseAuthentication();
 app.UseAuthorization();
+
+
 
 app.MapControllers();
 app.MapHub<ChatHub>("/chat-hub");
